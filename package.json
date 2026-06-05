@@ -1,0 +1,26 @@
+{
+  "name": "wv-kit",
+  "version": "0.1.0",
+  "description": "Dev server and build tooling for FileMaker web viewer projects",
+  "author": {
+    "name": "Ryan Lee Simms",
+    "url": "https://www.beezwax.net/beez/ryan-simms"
+  },
+  "type": "module",
+  "bin": {
+    "wv-kit": "./bin/wv-kit.js"
+  },
+  "files": [
+    "bin",
+    "lib",
+    "vite.postinstall.js"
+  ],
+  "dependencies": {
+    "express": "^5.2.1",
+    "glob": "^13.0.6",
+    "jsdom": "^28.0.0"
+  },
+  "peerDependencies": {
+    "vite": ">=7"
+  }
+}
