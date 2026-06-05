@@ -52,22 +52,6 @@ Every viewer must follow three rules:
 
 **1. `index.js` exports a DOM element as its default export.** wv-kit injects an inline script that does `document.getElementById('app').append(defaultExport)`, then calls `flushMounts()` to run any `onMount` callbacks.
 
-**2. Use `onMount` for post-mount setup.** Import it from `'wv-kit'` and call it before the default export. wv-kit calls all registered callbacks after appending the element, so the element is in the DOM and `document.getElementById` works:
-
-```js
-// src/my-viewer/index.js
-import { onMount } from 'wv-kit';
-import controlFunctions from './control-functions.js';
-import buildApp from './view.js';
-
-Object.assign(window, controlFunctions);
-onMount(() => {
-  // element is now in #app — safe to query, measure, or initialise plugins
-  new bootstrap.Modal(document.getElementById('my-modal'));
-});
-export default buildApp();
-```
-
 **2. `view.js` returns — never appends — the app element.**
 
 **3. `dev/client.js` calls window control functions directly with imported data** — import `data.json` with `type: 'json'` and call `window.loadData(JSON.stringify(data))` or `window.loadDetail(...)` directly. Do not call `filemakerScripts.*` from dev files — that round-trips through the mock and SSE unnecessarily. The dev file is simulating what FileMaker would push; call the receiver directly.
@@ -127,10 +111,15 @@ export default {
 
 ```js
 // src/my-viewer/index.js
+import { onMount } from 'wv-kit';
 import controlFunctions from './control-functions.js';
 import buildApp from './view.js';
 
 Object.assign(window, controlFunctions);
+onMount(() => {
+  // element is in #app — safe to query, measure, or initialise third-party libs
+  new bootstrap.Modal(document.getElementById('my-modal'));
+});
 export default buildApp();
 ```
 
@@ -329,7 +318,7 @@ export default [
   {
     name: 'replace-process-env',
     transform(code) {
-      return code.replace(/process\.env\.NODE_ENV/g, '"development"');
+      return code.replace(/process\.env\.NODE_ENV/g, '"production"');
     },
   },
 ];
@@ -346,7 +335,7 @@ export default function buildApp() {
 }
 ```
 
-**React data timing — buffer data that arrives before `useEffect` runs.** `dev/client.js` calls `window.loadData` synchronously, before React has rendered the component and `useEffect` has registered the state setter. Without buffering, the data is silently dropped:
+**Use `onMount` to run code after the container is in the DOM.** Because React renders asynchronously via `queueMicrotask`, `onMount` alone does not guarantee the React tree is ready — use `useEffect` inside the component for React-specific post-render work. `onMount` is still useful for measuring the container or initialising non-React plugins: `dev/client.js` calls `window.loadData` synchronously, before React has rendered the component and `useEffect` has registered the state setter. Without buffering, the data is silently dropped:
 
 ```js
 // src/my-viewer/view.js
@@ -429,21 +418,19 @@ export default {
 };
 ```
 
-For post-mount work with plain elements, use `queueMicrotask`:
+For post-mount work, use `onMount` from `'wv-kit'` in `index.js`:
 ```js
-export default function buildApp() {
-  const el = document.createElement('div');
-  // ...build DOM...
+// src/my-viewer/index.js
+import { onMount } from 'wv-kit';
+import controlFunctions from './control-functions.js';
+import buildApp from './view.js';
 
-  queueMicrotask(() => {
-    // el is now in the DOM — safe to measure, query, initialise third-party libs
-    const height = document.getElementById('header').offsetHeight;
-    document.documentElement.style.setProperty('--header-height', `${height}px`);
-    new ResizeObserver(() => { /* ... */ }).observe(document.getElementById('header'));
-  });
-
-  return el;
-}
+Object.assign(window, controlFunctions);
+onMount(() => {
+  const height = document.getElementById('header').offsetHeight;
+  document.documentElement.style.setProperty('--header-height', `${height}px`);
+});
+export default buildApp();
 ```
 
 ---
@@ -631,7 +618,7 @@ Then in viewer code:
 import { Chart } from '../shared/installed/my-lib.js';
 ```
 
-Run `wv-kit install` after adding or changing dependency files. `src/shared/installed/` is gitignored — regenerated on every `npm install`.
+Run `wv-kit install` after adding or changing dependency files. `src/shared/installed/` is gitignored — regenerated on every `npm install`. If you place a `.d.ts` file alongside a `.js` entry in `front-end-dependencies/`, it is automatically copied to `installed/` so TypeScript can resolve types for that bundle.
 
 ---
 
@@ -805,11 +792,15 @@ export default [
     ...wvKit.configs.recommended,
     rules: { ...wvKit.configs.recommended.rules, 'wv-kit/no-anchor-href': 'warn' },
   },
-  {
-    files: ['src/**/dev/**'],
-    rules: { 'wv-kit/no-location-read': 'off' },
-  },
 ];
+```
+
+The `no-dev-outside-import` rule accepts an `allow` array for imports that are legitimately needed in dev files:
+
+```js
+rules: {
+  'wv-kit/no-dev-outside-import': ['error', { allow: ['../shared/filemaker-scripts.js'] }],
+}
 ```
 
 Add a `lint` script for editor/CI use: `"lint": "eslint src"`.
@@ -819,8 +810,6 @@ To suppress a rule on one line use a standard ESLint disable comment:
 import { x } from '../view.js'; // eslint-disable-line wv-kit/no-dev-outside-import
 ```
 
-For `wv-kit check` / build-time suppression (without ESLint), use `// wv-kit-ok` instead.
-
 ---
 
 ## Building for production
@@ -829,14 +818,10 @@ For `wv-kit check` / build-time suppression (without ESLint), use `// wv-kit-ok`
 wv-kit build              # all viewers → dist/*.html
 wv-kit build list         # one viewer (copies to clipboard on macOS)
 wv-kit build list report  # multiple specific viewers
-wv-kit check              # run compatibility checks only, exit 1 if issues found
+wv-kit check              # run ESLint only, exit 1 if issues found
 ```
 
-`wv-kit build` runs `wv-kit check` first and fails if issues are found. To suppress a false positive on a specific line, add `// wv-kit-ok`:
-
-```js
-import { t } from '../../shared/installed/kensington.js'; // wv-kit-ok
-```
+`wv-kit build` runs ESLint before building and fails on any errors. ESLint must be installed as a peer dependency.
 
 Each output is a self-contained HTML file. Paste it into FileMaker via **Admin → Settings → Web Viewer → HTML field**.
 
@@ -850,7 +835,7 @@ Each output is a self-contained HTML file. Paste it into FileMaker via **Admin �
 
 **Import paths from `src/shared/` files use `./installed/`, not `../installed/`.** Files inside `src/shared/` reference their own subdirectory — one `../` step would overshoot to `/src/`.
 
-**Never** import bare npm specifiers in `src/` — the browser cannot resolve them. Always go through `src/shared/installed/`.
+**Never** import bare npm specifiers in `src/` — the browser cannot resolve them. Always go through `src/shared/installed/`. CDN URLs (`https://cdn.jsdelivr.net/...`) are allowed.
 
 **Never** put Node.js code (`fs`, `path`, `child_process`) in `src/` — only in `dev-server/`.
 
@@ -860,6 +845,6 @@ Each output is a self-contained HTML file. Paste it into FileMaker via **Admin �
 
 **Keep viewers independent** — `src/list/` must not import from `src/detail-full/`. Shared logic goes in `src/shared/`.
 
-**Query the DOM only after mount** — `document.getElementById(...)` inside `index.js` or `view.js` runs before the element is appended. Use `addConnectedCallback` (kensington), a custom element's `connectedCallback`, or `queueMicrotask` for post-mount work.
+**Query the DOM only after mount** — `document.getElementById(...)` inside `view.js` runs before the element is appended. Use `onMount` in `index.js` (plain JS), `addConnectedCallback` (Kensington), or `useEffect` (React) for post-mount work.
 
-**One export per `index.js`** — the default export is the app element. Other symbols exported from `index.js` are ignored by wv-kit.
+**`index.js` default export is the app element** — wv-kit appends it to `#app` and then calls any `onMount` callbacks. Do not call `document.getElementById('app').append(...)` yourself.
