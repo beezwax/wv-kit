@@ -137,6 +137,24 @@ export default router;
 
 ---
 
+## Vite config
+
+wv-kit provides a base Vite config that handles the single-file output and viewer root convention. The project's `vite.config.js` extends it with project-specific plugins and settings:
+
+```js
+import { mergeConfig } from 'vite';
+import baseConfig from 'wv-kit/vite.config.js';
+
+export default mergeConfig(baseConfig, {
+  build: { cssMinify: true, minify: false },
+  plugins: [ /* project-specific plugins */ ],
+});
+```
+
+Do not set `root` or `outDir` in the project config — the base config owns those.
+
+---
+
 ## Front-end dependencies
 
 npm packages needed in the browser are pre-bundled into `src/shared/installed/` by `wv-kit install`. To add a new package:
