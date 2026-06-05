@@ -142,38 +142,6 @@ describe('no-dev-outside-import', () => {
   it('passes RuleTester', () => {});
 });
 
-// ─── viewer-index-depth ───────────────────────────────────────────────────
-
-describe('viewer-index-depth', () => {
-  tester.run('viewer-index-depth', plugin.rules['viewer-index-depth'], {
-    valid: [
-      // correct depth
-      { code: 'export default 1;', filename: '/project/src/list/index.js' },
-      { code: 'export default 1;', filename: '/project/src/detail/index.ts' },
-      // shared exempt
-      { code: 'export default 1;', filename: '/project/src/shared/index.js' },
-      // non-index file deep in a viewer — not this rule's concern
-      { code: 'export default 1;', filename: '/project/src/list/components/Button.js' },
-      // index.js outside src/ entirely — not this rule's concern
-      { code: 'export default 1;', filename: '/project/node_modules/foo/index.js' },
-    ],
-    invalid: [
-      {
-        code: 'export default 1;',
-        filename: '/project/src/list/sub/index.js',
-        errors: [{ messageId: 'wrongDepth' }],
-      },
-      {
-        code: 'export default 1;',
-        filename: '/project/src/detail/components/index.ts',
-        errors: [{ messageId: 'wrongDepth' }],
-      },
-    ],
-  });
-
-  it('passes RuleTester', () => {});
-});
-
 // ─── index-default-export ─────────────────────────────────────────────────
 
 describe('index-default-export', () => {
@@ -217,7 +185,6 @@ describe('plugin.configs.recommended', () => {
       'wv-kit/no-anchor-href',
       'wv-kit/no-bare-import',
       'wv-kit/no-dev-outside-import',
-      'wv-kit/viewer-index-depth',
       'wv-kit/index-default-export',
     ];
     for (const rule of expected) {
@@ -231,7 +198,7 @@ describe('plugin.configs.recommended', () => {
     assert.ok(ruleNames.includes('no-anchor-href'));
     assert.ok(ruleNames.includes('no-bare-import'));
     assert.ok(ruleNames.includes('no-dev-outside-import'));
-    assert.ok(ruleNames.includes('viewer-index-depth'));
     assert.ok(ruleNames.includes('index-default-export'));
+    assert.ok(!ruleNames.includes('viewer-index-depth'), 'viewer-index-depth should not exist');
   });
 });
