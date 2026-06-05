@@ -48,10 +48,19 @@ describe('injectedIndexPage', () => {
       assert.ok(html.includes('/dev/shared-dev-index.js'));
     });
 
-    it('injects app mount script for the viewer', () => {
+    it('injects app mount script with flushMounts', () => {
       const s = scripts(html).find(s => s.content.includes('/src/list/index.js'));
       assert.ok(s, 'app script not found');
       assert.ok(s.content.includes("document.getElementById('app').append(app)"));
+      assert.ok(s.content.includes('flushMounts()'));
+      assert.ok(s.content.includes("from 'wv-kit'"));
+    });
+
+    it('injects import map for wv-kit before module scripts', () => {
+      const importMapTag = html.match(/<script type="importmap">([\s\S]*?)<\/script>/);
+      assert.ok(importMapTag, 'import map not found');
+      const map = JSON.parse(importMapTag[1]);
+      assert.equal(map.imports['wv-kit'], '/wv-kit.js');
     });
   });
 

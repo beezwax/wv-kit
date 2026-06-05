@@ -10,6 +10,13 @@
   "bin": {
     "wv-kit": "./bin/wv-kit.js"
   },
+  "exports": {
+    ".": "./lib/browser/lifecycle.js",
+    "./eslint.config.js": "./eslint.config.js",
+    "./lib/*": "./lib/*",
+    "./vite.config.js": "./vite.config.js",
+    "./vite.postinstall.js": "./vite.postinstall.js"
+  },
   "scripts": {
     "test": "node --test test/*.test.js"
   },

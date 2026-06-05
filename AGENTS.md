@@ -50,7 +50,23 @@ front-end-dependencies/
 
 Every viewer must follow three rules:
 
-**1. `index.js` exports a DOM element as its default export.** wv-kit injects an inline script that does `document.getElementById('app').append(defaultExport)`.
+**1. `index.js` exports a DOM element as its default export.** wv-kit injects an inline script that does `document.getElementById('app').append(defaultExport)`, then calls `flushMounts()` to run any `onMount` callbacks.
+
+**2. Use `onMount` for post-mount setup.** Import it from `'wv-kit'` and call it before the default export. wv-kit calls all registered callbacks after appending the element, so the element is in the DOM and `document.getElementById` works:
+
+```js
+// src/my-viewer/index.js
+import { onMount } from 'wv-kit';
+import controlFunctions from './control-functions.js';
+import buildApp from './view.js';
+
+Object.assign(window, controlFunctions);
+onMount(() => {
+  // element is now in #app — safe to query, measure, or initialise plugins
+  new bootstrap.Modal(document.getElementById('my-modal'));
+});
+export default buildApp();
+```
 
 **2. `view.js` returns — never appends — the app element.**
 
