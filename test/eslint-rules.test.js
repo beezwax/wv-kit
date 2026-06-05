@@ -111,8 +111,17 @@ describe('no-dev-outside-import', () => {
       { code: "import x from '../shared/utils.js';", filename: 'src/list/view.js' },
       // same-dir import in dev
       { code: "import x from './data.json';",         filename: 'src/list/dev/client.js' },
-      // cross-dev import is fine
-      { code: "import x from '../../list/dev/data.json';", filename: 'src/detail/dev/client.js' },
+      // allowed via rule option
+      {
+        code: "import filemakerScripts from '../../shared/filemaker-scripts.js';",
+        filename: 'src/list/dev/client.js',
+        options: [{ allow: ['shared/filemaker-scripts.js'] }],
+      },
+      {
+        code: "import { x } from '../control-functions.js';",
+        filename: 'src/detail/dev/nav-bar-content.js',
+        options: [{ allow: ['../control-functions.js'] }],
+      },
       // shared/installed is exempt
       { code: "import { t } from '../../shared/installed/kensington.js';", filename: 'src/list/dev/nav-bar-content.js' },
     ],
