@@ -4,7 +4,7 @@
   "description": "wv-kit example — Kensington reactive product catalog",
   "type": "module",
   "scripts": {
-    "start": "node --watch node_modules/wv-kit/lib/server.js",
+    "lint": "eslint src",
     "build": "wv-kit build",
     "postinstall": "wv-kit install"
   },

@@ -764,6 +764,49 @@ import type { Sku } from './types.js'; // imports types.ts
 
 ---
 
+## Linting
+
+`wv-kit` ships an ESLint plugin and a built-in config. **If ESLint is installed in the project, `wv-kit build` runs it automatically** using wv-kit's config — no `eslint.config.js` needed.
+
+```bash
+npm install eslint   # opt in — build will now lint on every wv-kit build
+```
+
+To customise rules, add an `eslint.config.js` at the project root — it takes precedence over wv-kit's default. To get IDE inline errors without customising anything, a one-line re-export is enough:
+
+```js
+// eslint.config.js — commit this to get IDE inline errors
+export { default } from 'wv-kit/eslint.config.js';
+```
+
+```js
+// eslint.config.js
+import wvKit from 'wv-kit/lib/eslint.js';
+
+export default [
+  {
+    files: ['src/**/*.js', 'src/**/*.ts', 'src/**/*.tsx'],
+    ...wvKit.configs.recommended,
+    rules: { ...wvKit.configs.recommended.rules, 'wv-kit/no-anchor-href': 'warn' },
+  },
+  {
+    files: ['src/**/dev/**'],
+    rules: { 'wv-kit/no-location-read': 'off' },
+  },
+];
+```
+
+Add a `lint` script for editor/CI use: `"lint": "eslint src"`.
+
+To suppress a rule on one line use a standard ESLint disable comment:
+```js
+import { x } from '../view.js'; // eslint-disable-line wv-kit/no-dev-outside-import
+```
+
+For `wv-kit check` / build-time suppression (without ESLint), use `// wv-kit-ok` instead.
+
+---
+
 ## Building for production
 
 ```bash

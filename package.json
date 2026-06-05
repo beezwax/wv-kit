@@ -13,6 +13,7 @@
   "files": [
     "AGENTS.md",
     "bin",
+    "eslint.config.js",
     "lib",
     "vite.config.js",
     "vite.postinstall.js"
