@@ -15,7 +15,9 @@
       "Bash(kill %1)",
       "Bash(xargs cat)",
       "Bash(sed -i '' 's|import { loadProduct, showSaveResult } from '\\\\''./view.js'\\\\'';|import filemakerScripts from '\\\\''../shared/filemaker-scripts.js'\\\\'';\\\\nimport { loadProduct, showSaveResult } from '\\\\''./view.js'\\\\'';|' /Users/ryansimms/RubymineProjects/wv-kit/examples/kensington/src/detail/control-functions.js)",
-      "Bash(sed -i '' 's|if \\(success\\) window.location.href = '\\\\''/list'\\\\'';|if \\(success\\) filemakerScripts.navigateToList\\(\\);|g' /Users/ryansimms/RubymineProjects/wv-kit/examples/kensington/src/detail/control-functions.js /Users/ryansimms/RubymineProjects/wv-kit/examples/plain-js/src/detail/control-functions.js /Users/ryansimms/RubymineProjects/wv-kit/examples/react-tsx/src/detail/control-functions.ts)"
+      "Bash(sed -i '' 's|if \\(success\\) window.location.href = '\\\\''/list'\\\\'';|if \\(success\\) filemakerScripts.navigateToList\\(\\);|g' /Users/ryansimms/RubymineProjects/wv-kit/examples/kensington/src/detail/control-functions.js /Users/ryansimms/RubymineProjects/wv-kit/examples/plain-js/src/detail/control-functions.js /Users/ryansimms/RubymineProjects/wv-kit/examples/react-tsx/src/detail/control-functions.ts)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(grep -v \"^$\")"
     ]
   }
 }

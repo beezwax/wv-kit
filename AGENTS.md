@@ -34,15 +34,14 @@ src/
     control-functions.js  # Inbound FM callbacks, exposed via Object.assign(window, …)
     style.css             # Viewer-specific styles
     dev/
-      client.js           # Dev-only: seeds data by calling filemakerScripts.* (goes through mock)
-      nav-bar-content.js  # Dev-only (optional): DOM element shown in dev nav modal — must NOT import from viewer internals; interact only via window functions or dev-server API routes (fetch('/api/...'))
-
+      client.js           # Dev-only: imports data.json and calls window.load* directly — no filemakerScripts
+      data.json           # Dev-only: mock data store — read/written by mocks.js, imported by nav-bar-content
+      nav-bar-content.js  # Dev-only (optional): DOM element shown in dev nav modal — interact only via window functions and filemakerScripts, never import viewer internals
 dev-server/
-  mocks.js                # Server-side FM script mock handlers
-  routes.js               # Optional project Express routes
-  front-end-dependencies/
-    <name>.js             # Re-export entry for one npm package
-    <name>.config.js      # Optional Rollup plugins for that package
+  mocks.js                # Server-side FM script mock handlers — the only server-side customisation needed
+front-end-dependencies/
+  <name>.js               # Re-export entry for one npm package
+  <name>.config.js        # Optional Rollup plugins for that package
 ```
 
 ---
@@ -55,7 +54,19 @@ Every viewer must follow three rules:
 
 **2. `view.js` returns — never appends — the app element.**
 
-**3. `dev/client.js` calls `window.load*` directly** — these are available because `index.js` runs first (wv-kit injects the app script before the dev client script). Note: for React viewers, `window.load*` may be called before `useEffect` has registered the state setter — see the React section for the buffering pattern.
+**3. `dev/client.js` calls window control functions directly with imported data** — import `data.json` with `type: 'json'` and call `window.loadData(JSON.stringify(data))` or `window.loadDetail(...)` directly. Do not call `filemakerScripts.*` from dev files — that round-trips through the mock and SSE unnecessarily. The dev file is simulating what FileMaker would push; call the receiver directly.
+
+```js
+// src/detail/dev/client.js
+import data from '../../list/dev/data.json' with { type: 'json' };
+const id = new URLSearchParams(window.location.search).get('id') ?? 'new';
+if (id === 'new') {
+  window.loadDetail(JSON.stringify({ id: 'new', name: '', ... }));
+} else {
+  const product = data.find(p => p.id === id);
+  if (product) window.loadDetail(JSON.stringify(product));
+}
+```
 
 ---
 
@@ -442,10 +453,15 @@ Object.assign(window, controlFunctions);
 export default buildApp();
 // FileMaker will call window.loadDetail(jsonStr) after navigating here.
 
-// src/detail/dev/client.js — dev only, never built into production
-import filemakerScripts from '../shared/filemaker-scripts.js';
+// src/detail/dev/client.js — dev only, calls window control functions directly
+import data from '../../list/dev/data.json' with { type: 'json' };
 const id = new URLSearchParams(window.location.search).get('id') ?? 'new';
-filemakerScripts.requestProduct(id);  // triggers mock → SSE → window.loadDetail
+if (id === 'new') {
+  window.loadDetail(JSON.stringify({ id: 'new', name: '', sku: '', category: '', price: 0, stock: 0, status: 'active', description: '', updatedAt: '' }));
+} else {
+  const product = data.find(p => p.id === id);
+  if (product) window.loadDetail(JSON.stringify(product));
+}
 ```
 
 ---
@@ -566,36 +582,6 @@ export default {
 - `'alert'` → `window.alert(args[0])`
 
 All other names call `window[fn](...args)` — so `performJavaScriptInWebViewer('loadData', json)` calls `window.loadData(json)`.
-
----
-
-## Dev routes (`dev-server/routes.js`)
-
-Use routes when the mock needs to share state across multiple script calls, or persist state to the filesystem between page reloads.
-
-```js
-import fs from 'node:fs';
-import path from 'node:path';
-import express from 'express';
-
-const router = express.Router();
-const STATE_PATH = new URL('../src/my-viewer/dev/state.json', import.meta.url).pathname;
-
-// Persist viewer state between reloads
-router.post('/my-viewer/state', (req, res) => {
-  fs.writeFileSync(STATE_PATH, JSON.stringify(req.body, null, 2));
-  res.sendStatus(204);
-});
-
-// Serve a filtered subset of dev data
-router.get('/my-viewer/records', (req, res) => {
-  const all = JSON.parse(fs.readFileSync(DATA_PATH, 'utf-8'));
-  const { status } = req.query;
-  res.json(status ? all.filter(r => r.status === status) : all);
-});
-
-export default router;
-```
 
 ---
 
@@ -784,6 +770,13 @@ import type { Sku } from './types.js'; // imports types.ts
 wv-kit build              # all viewers → dist/*.html
 wv-kit build list         # one viewer (copies to clipboard on macOS)
 wv-kit build list report  # multiple specific viewers
+wv-kit check              # run compatibility checks only, exit 1 if issues found
+```
+
+`wv-kit build` runs `wv-kit check` first and fails if issues are found. To suppress a false positive on a specific line, add `// wv-kit-ok`:
+
+```js
+import { t } from '../../shared/installed/kensington.js'; // wv-kit-ok
 ```
 
 Each output is a self-contained HTML file. Paste it into FileMaker via **Admin → Settings → Web Viewer → HTML field**.

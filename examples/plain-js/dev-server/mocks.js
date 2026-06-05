@@ -4,7 +4,7 @@ import { performJavaScriptInWebViewer } from 'wv-kit/lib/sse.js';
 
 import { scriptNames } from '../src/shared/script-names.js';
 
-const DATA = new URL('./data/products.json', import.meta.url).pathname;
+const DATA = new URL('../src/list/dev/data.json', import.meta.url).pathname;
 
 function read() {
   return JSON.parse(fs.readFileSync(DATA, 'utf-8'));
