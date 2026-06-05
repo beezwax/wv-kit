@@ -1,6 +1,7 @@
-import { computed, signal, t } from '../shared/installed/kensington.js';
+import { computed, signal, t } from 'kensington';
 import filemakerScripts from '../shared/filemaker-scripts.js';
 import { formatPrice } from '../shared/product-utils.js';
+import { saveToast } from './save-toast.js';
 
 export const product  = signal(null);
 const saving  = signal(false);
@@ -188,9 +189,7 @@ export default function buildApp() {
     ]),
 
     // Toast notification
-    toast.transform(v => !v ? null :
-      t.div({ class: `alert alert-${v.type} position-fixed bottom-0 end-0 m-3` }, v.message),
-    ),
+    saveToast(toast),
   ]);
 
   return view.toElement();

@@ -1,7 +1,8 @@
-import React, { useCallback, useEffect, useState, createRoot } from '../shared/installed/react.js';
+import { useEffect, useState } from 'react';
+import { createRoot } from 'react-dom/client';
 import filemakerScripts from '../shared/filemaker-scripts.js';
-import { formatPrice, statusClass } from '../shared/product-utils.js';
 import type { Product } from '../shared/types.js';
+import { ProductRow } from './ProductRow.js';
 
 type SetProducts = (products: Product[]) => void;
 let _setProducts: SetProducts | null = null;
@@ -26,10 +27,6 @@ function ProductList() {
     (!query || p.name.toLowerCase().includes(query.toLowerCase()) ||
                p.sku.toLowerCase().includes(query.toLowerCase())),
   );
-
-  const handleRowClick = useCallback((id: string) => {
-    filemakerScripts.navigateToDetail(id);
-  }, []);
 
   return (
     <div className="container py-3">
@@ -73,16 +70,7 @@ function ProductList() {
           <tbody>
             {filtered.length === 0 ? (
               <tr><td colSpan={6} className="text-center text-muted py-4">No products found</td></tr>
-            ) : filtered.map(p => (
-              <tr key={p.id} style={{ cursor: 'pointer' }} onClick={() => handleRowClick(p.id)}>
-                <td className="fw-medium">{p.name}</td>
-                <td><code className="text-muted">{p.sku}</code></td>
-                <td>{p.category}</td>
-                <td className="text-end">{formatPrice(p.price)}</td>
-                <td className="text-end">{p.stock}</td>
-                <td><span className={`badge bg-${statusClass(p.status)}`}>{p.status}</span></td>
-              </tr>
-            ))}
+            ) : filtered.map(p => <ProductRow key={p.id} product={p} />)}
           </tbody>
         </table>
       </div>

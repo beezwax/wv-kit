@@ -1,7 +1,8 @@
-import React, { useCallback, useEffect, useState, createRoot } from '../shared/installed/react.js';
+import { useCallback, useEffect, useState } from 'react';
+import { createRoot } from 'react-dom/client';
 import filemakerScripts from '../shared/filemaker-scripts.js';
-import { formatPrice } from '../shared/product-utils.js';
 import type { DeleteResult, Product, SaveResult } from '../shared/types.js';
+import { FormFields } from './FormFields.js';
 
 type SetProduct   = (p: Product) => void;
 type SetSaveResult = (r: SaveResult) => void;
@@ -71,46 +72,15 @@ function ProductDetail() {
         <span className="text-muted small">{product?.id === 'new' ? '' : `Updated: ${product?.updatedAt}`}</span>
       </div>
 
-      <div className="row g-3">
-        <div className="col-md-6">
-          <label className="form-label fw-medium">Name</label>
-          <input className="form-control" type="text" value={name} onChange={e => setName(e.target.value)} required />
-        </div>
-        <div className="col-md-6">
-          <label className="form-label fw-medium">SKU</label>
-          <input className="form-control" type="text" value={sku} onChange={e => setSku(e.target.value)} required />
-        </div>
-        <div className="col-md-4">
-          <label className="form-label fw-medium">Category</label>
-          <input className="form-control" type="text" value={category} onChange={e => setCategory(e.target.value)} />
-        </div>
-        <div className="col-md-4">
-          <label className="form-label fw-medium">Price</label>
-          <input className="form-control" type="number" step="0.01" min="0"
-            value={price} onChange={e => setPrice(parseFloat(e.target.value) || 0)} />
-        </div>
-        <div className="col-md-4">
-          <label className="form-label fw-medium d-block">Formatted</label>
-          <span className="form-control-plaintext fw-bold text-success fs-5">{formatPrice(price)}</span>
-        </div>
-        <div className="col-md-3">
-          <label className="form-label fw-medium">Stock</label>
-          <input className="form-control" type="number" min="0"
-            value={stock} onChange={e => setStock(parseInt(e.target.value, 10) || 0)} />
-        </div>
-        <div className="col-md-3">
-          <label className="form-label fw-medium">Status</label>
-          <select className="form-select" value={status} onChange={e => setStatus(e.target.value as Product['status'])}>
-            <option value="active">Active</option>
-            <option value="discontinued">Discontinued</option>
-          </select>
-        </div>
-        <div className="col-12">
-          <label className="form-label fw-medium">Description</label>
-          <textarea className="form-control" rows={3} value={description}
-            onChange={e => setDescription(e.target.value)} />
-        </div>
-      </div>
+      <FormFields
+        name={name} onNameChange={setName}
+        sku={sku} onSkuChange={setSku}
+        category={category} onCategoryChange={setCategory}
+        price={price} onPriceChange={setPrice}
+        stock={stock} onStockChange={setStock}
+        status={status} onStatusChange={setStatus}
+        description={description} onDescriptionChange={setDescription}
+      />
 
       <div className="d-flex gap-2 mt-4 pt-3 border-top">
         <button className="btn btn-primary" type="button" onClick={handleSave}>

@@ -4,9 +4,8 @@
   "description": "wv-kit example — plain HTML/JS product catalog",
   "type": "module",
   "scripts": {
-    "start": "node --watch node_modules/wv-kit/lib/server.js",
-    "build": "wv-kit build",
-    "postinstall": "wv-kit install"
+    "start": "node --watch-path=src --watch-path=dev-server node_modules/wv-kit/lib/server.js",
+    "build": "wv-kit build"
   },
   "dependencies": {
     "currency.js": "^2.0.4",

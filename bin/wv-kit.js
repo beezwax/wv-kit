@@ -9,14 +9,7 @@ if (command === 'start') {
 } else if (command === 'check') {
   const { runEslint } = await import('../lib/lint.js');
   runEslint();
-} else if (command === 'install') {
-  const { execFileSync } = await import('node:child_process');
-  const { fileURLToPath } = await import('node:url');
-  const path = (await import('node:path')).default;
-  const configPath = path.join(path.dirname(fileURLToPath(import.meta.url)), '../vite.postinstall.js');
-  const viteBin = path.resolve('node_modules/.bin/vite');
-  execFileSync(viteBin, ['build', '--config', configPath], { stdio: 'inherit' });
 } else {
-  console.error(`Unknown command: ${command}\nUsage: wv-kit [start | build [viewer...] | check | install]`);
+  console.error(`Unknown command: ${command}\nUsage: wv-kit [start | build [viewer...] | check]`);
   process.exit(1);
 }

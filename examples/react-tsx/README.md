@@ -21,6 +21,5 @@ npm run typecheck
 - `.tsx` files transformed by the dev server's esbuild middleware
 - React hooks (`useState`, `useEffect`, `useCallback`)
 - TypeScript interfaces for FM callback data
-- `front-end-dependencies/` for React, ReactDOM, and `currency.js`
 - `queueMicrotask` to render React after the container is appended
 - FM callbacks wired through a module-level setter

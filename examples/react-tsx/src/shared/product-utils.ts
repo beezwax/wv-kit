@@ -1,4 +1,4 @@
-import currency from './installed/currency.js';
+import currency from 'currency.js';
 import type { Product } from './types.js';
 
 export function formatPrice(price: number): string {

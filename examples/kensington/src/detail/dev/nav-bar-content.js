@@ -1,5 +1,5 @@
-import data from '../../list/dev/data.json' with { type: 'json' };
-import { t } from '../../shared/installed/kensington.js';
+import data from '../../list/dev/data.json';
+import { t } from 'kensington';
 import blankProduct from './blank-product.js';
 
 export default t.div({ class: 'd-flex align-items-center gap-2' }, [

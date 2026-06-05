@@ -72,29 +72,46 @@ describe('no-anchor-href', () => {
 // ─── no-bare-import ───────────────────────────────────────────────────────
 
 describe('no-bare-import', () => {
+  const deps = {
+    react: '*',
+    'react-dom': '*',
+    lit: '*',
+    'currency.js': '*',
+    '@scope/pkg': '*',
+  };
+  const settings = { wvKitDeps: deps };
+
   tester.run('no-bare-import', plugin.rules['no-bare-import'], {
     valid: [
-      { code: "import x from './utils.js';" },
-      { code: "import x from '../shared/installed/react.js';" },
-      { code: "import x from 'node:fs';" },
-      { code: "import x from 'wv-kit';" },
-      { code: "import x from 'kensington';" },
+      { code: "import x from './utils.js';", settings },
+      { code: "import x from 'node:fs';", settings },
+      // wv-kit is always allowed (peer dependency)
+      { code: "import x from 'wv-kit';", settings },
+      // declared deps
+      { code: "import React from 'react';", settings },
+      { code: "import { createRoot } from 'react-dom/client';", settings },
+      { code: "import { LitElement, html } from 'lit';", settings },
+      { code: "import currency from 'currency.js';", settings },
+      { code: "import x from '@scope/pkg/subpath.js';", settings },
       // CDN imports are valid in browsers
-      { code: "import x from 'https://cdn.jsdelivr.net/npm/react@18/+esm';" },
-      { code: "import x from 'http://localhost:3000/src/foo.js';" },
+      { code: "import x from 'https://cdn.jsdelivr.net/npm/react@18/+esm';", settings },
+      { code: "import x from 'http://localhost:3000/src/foo.js';", settings },
     ],
     invalid: [
       {
-        code: "import React from 'react';",
-        errors: [{ messageId: 'noBareImport' }],
-      },
-      {
-        code: "import { createRoot } from 'react-dom/client';",
-        errors: [{ messageId: 'noBareImport' }],
+        code: "import _ from 'lodash';",
+        settings,
+        errors: [{ messageId: 'notDeclared', data: { spec: 'lodash' } }],
       },
       {
         code: "import { signal } from 'kensington-signals';",
-        errors: [{ messageId: 'noBareImport' }],
+        settings,
+        errors: [{ messageId: 'notDeclared', data: { spec: 'kensington-signals' } }],
+      },
+      {
+        code: "import x from '@missing/pkg';",
+        settings,
+        errors: [{ messageId: 'notDeclared', data: { spec: '@missing/pkg' } }],
       },
     ],
   });
@@ -122,8 +139,10 @@ describe('no-dev-outside-import', () => {
         filename: 'src/detail/dev/nav-bar-content.js',
         options: [{ allow: ['../control-functions.js'] }],
       },
-      // shared/installed is exempt
-      { code: "import { t } from '../../shared/installed/kensington.js';", filename: 'src/list/dev/nav-bar-content.js' },
+      // same-directory dev import is fine
+      { code: "import x from './helper.js';", filename: 'src/list/dev/nav-bar-content.js' },
+      // dev-to-dev cross-viewer is exempt via '/dev/' check
+      { code: "import x from '../../detail/dev/helper.js';", filename: 'src/list/dev/client.js' },
     ],
     invalid: [
       {

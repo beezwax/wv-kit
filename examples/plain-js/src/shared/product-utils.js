@@ -1,4 +1,4 @@
-import currency from './installed/currency.js';
+import currency from 'currency.js';
 
 export function formatPrice(price) {
   return currency(price).format();

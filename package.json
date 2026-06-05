@@ -10,12 +10,15 @@
   "bin": {
     "wv-kit": "./bin/wv-kit.js"
   },
+  "types": "./lib/index.d.ts",
   "exports": {
-    ".": "./lib/browser/lifecycle.js",
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
     "./eslint.config.js": "./eslint.config.js",
     "./lib/*": "./lib/*",
-    "./vite.config.js": "./vite.config.js",
-    "./vite.postinstall.js": "./vite.postinstall.js"
+    "./vite.config.js": "./vite.config.js"
   },
   "scripts": {
     "test": "node --test test/*.test.js"
@@ -25,8 +28,7 @@
     "bin",
     "eslint.config.js",
     "lib",
-    "vite.config.js",
-    "vite.postinstall.js"
+    "vite.config.js"
   ],
   "dependencies": {
     "esbuild": "^0.27.7",

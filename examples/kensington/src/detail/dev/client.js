@@ -1,4 +1,4 @@
-import data from '../../list/dev/data.json' with { type: 'json' };
+import data from '../../list/dev/data.json';
 import blankProduct from './blank-product.js';
 
 const id = new URLSearchParams(window.location.search).get('id') ?? 'new';

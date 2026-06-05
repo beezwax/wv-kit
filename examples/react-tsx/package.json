@@ -4,17 +4,22 @@
   "description": "wv-kit example — React + TypeScript product catalog",
   "type": "module",
   "scripts": {
-    "start": "node --watch node_modules/wv-kit/lib/server.js",
+    "start": "node --watch-path=src --watch-path=dev-server node_modules/wv-kit/lib/server.js",
     "build": "wv-kit build",
     "typecheck": "tsc --noEmit",
-    "postinstall": "node -e \"const {cpSync,mkdirSync}=require('fs');mkdirSync('node_modules/@types',{recursive:true});['react','react-dom','csstype'].forEach(p=>{try{cpSync('.types/'+p,'node_modules/@types/'+p,{recursive:true,force:true})}catch{}})\" && wv-kit install"
+    "postinstall": "node -e \"const {cpSync,mkdirSync}=require('fs');mkdirSync('node_modules/@types',{recursive:true});['react','react-dom','csstype'].forEach(p=>{try{cpSync('.types/'+p,'node_modules/@types/'+p,{recursive:true,force:true})}catch{}})\""
   },
   "dependencies": {
     "@vitejs/plugin-react": "^4.4.1",
     "currency.js": "^2.0.4",
+    "eslint": "^10.4.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "vite": "8.0.16",
     "wv-kit": "file:../.."
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.60.1"
   }
 }

@@ -1,0 +1,19 @@
+{
+  "name": "wv-kit-example-solid",
+  "version": "1.0.0",
+  "description": "wv-kit example — SolidJS product catalog",
+  "type": "module",
+  "scripts": {
+    "start": "node --watch-path=src --watch-path=dev-server node_modules/wv-kit/lib/server.js",
+    "build": "wv-kit build",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "currency.js": "^2.0.4",
+    "eslint": "^9.29.0",
+    "solid-js": "^1.9.5",
+    "vite": "8.0.16",
+    "vite-plugin-solid": "^2.11.12",
+    "wv-kit": "file:../.."
+  }
+}

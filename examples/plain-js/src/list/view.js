@@ -1,5 +1,5 @@
 import filemakerScripts from '../shared/filemaker-scripts.js';
-import { formatPrice, statusClass } from '../shared/product-utils.js';
+import { createProductRow } from './product-row.js';
 
 let allProducts = [];
 
@@ -42,18 +42,7 @@ function renderRows(products) {
   }
 
   products.forEach(p => {
-    const tr = document.createElement('tr');
-    tr.style.cursor = 'pointer';
-    tr.innerHTML = `
-      <td class="fw-medium">${p.name}</td>
-      <td><code class="text-muted">${p.sku}</code></td>
-      <td>${p.category}</td>
-      <td class="text-end">${formatPrice(p.price)}</td>
-      <td class="text-end">${p.stock}</td>
-      <td><span class="badge bg-${statusClass(p.status)}">${p.status}</span></td>
-    `;
-    tr.addEventListener('click', () => filemakerScripts.navigateToDetail(p.id));
-    tbody.appendChild(tr);
+    tbody.appendChild(createProductRow(p, () => filemakerScripts.navigateToDetail(p.id)));
   });
 }
 

@@ -18,7 +18,6 @@ Open http://localhost:3000 — the dev server auto-redirects to `/list`.
 
 ## What this demonstrates
 
-- `front-end-dependencies/` — `currency.js` bundled for browser use
 - FileMaker script calls via `src/shared/filemaker-scripts.js`
 - Inbound FM callbacks: `loadData`, `loadDetail`, `onSaveResult`, `onDeleteResult`
 - Dev mocks that read/write `dev-server/data/products.json`

@@ -1,0 +1,17 @@
+{
+  "name": "wv-kit-example-lit",
+  "version": "1.0.0",
+  "description": "wv-kit example — Lit (LitElement) product catalog",
+  "type": "module",
+  "scripts": {
+    "start": "node --watch-path=src --watch-path=dev-server node_modules/wv-kit/lib/server.js",
+    "build": "wv-kit build"
+  },
+  "dependencies": {
+    "currency.js": "^2.0.4",
+    "eslint": "^9.0.0",
+    "lit": "^3.2.1",
+    "vite": "8.0.16",
+    "wv-kit": "file:../.."
+  }
+}

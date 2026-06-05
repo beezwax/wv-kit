@@ -48,19 +48,15 @@ describe('injectedIndexPage', () => {
       assert.ok(html.includes('/dev/shared-dev-index.js'));
     });
 
-    it('injects app mount script with flushMounts', () => {
+    it('injects app mount script that calls window.__wvFlushMounts', () => {
       const s = scripts(html).find(s => s.content.includes('/src/list/index.js'));
       assert.ok(s, 'app script not found');
       assert.ok(s.content.includes("document.getElementById('app').append(app)"));
-      assert.ok(s.content.includes('flushMounts()'));
-      assert.ok(s.content.includes("from 'wv-kit'"));
+      assert.ok(s.content.includes('__wvFlushMounts'));
     });
 
-    it('injects import map for wv-kit before module scripts', () => {
-      const importMapTag = html.match(/<script type="importmap">([\s\S]*?)<\/script>/);
-      assert.ok(importMapTag, 'import map not found');
-      const map = JSON.parse(importMapTag[1]);
-      assert.equal(map.imports['wv-kit'], '/wv-kit.js');
+    it('does not inject an import map', () => {
+      assert.ok(!html.includes('importmap'), 'import map should not be present');
     });
   });
 
@@ -151,7 +147,17 @@ describe('injectedIndexPage', () => {
       assert.ok(html.includes('href="/list"') || html.includes('href="/detail"'));
     });
 
-    it('omits dev nav for a single viewer', () => {
+    it('renders dev nav for a single viewer when nav-bar-content.js exists', () => {
+      const dir = setupProject({
+        'src/index.html': BASE_HTML,
+        'src/list/dev/nav-bar-content.js': 'export default document.createElement("div");',
+      });
+      const html = injectedIndexPage('list', ['list'], dir);
+      cleanup(dir);
+      assert.ok(html.includes('dev-nav'));
+    });
+
+    it('omits dev nav for a single viewer with no nav-bar-content.js', () => {
       const dir = setupProject({ 'src/index.html': BASE_HTML });
       const html = injectedIndexPage('list', ['list'], dir);
       cleanup(dir);

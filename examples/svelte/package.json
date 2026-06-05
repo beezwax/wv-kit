@@ -1,0 +1,20 @@
+{
+  "name": "wv-kit-example-svelte",
+  "version": "1.0.0",
+  "description": "wv-kit example — Svelte 5 product catalog (runes)",
+  "type": "module",
+  "scripts": {
+    "start": "node --watch-path=src --watch-path=dev-server node_modules/wv-kit/lib/server.js",
+    "build": "wv-kit build"
+  },
+  "dependencies": {
+    "currency.js": "^2.0.4",
+    "eslint": "*",
+    "svelte": "^5.56.2",
+    "vite": "8.0.16",
+    "wv-kit": "file:../.."
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^7.1.2"
+  }
+}

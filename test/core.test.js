@@ -79,86 +79,11 @@ describe('viewer discovery', () => {
   });
 });
 
-// ─── vite.postinstall buildConfig ─────────────────────────────────────────
-
-describe('vite.postinstall buildConfig', () => {
-  // Extract just the config-building logic to test in isolation
-  function buildConfig(file, filePath, { plugins = [], external = [], paths = {} } = {}) {
-    const OUT_DIR = '/tmp/out';
-    return {
-      build: {
-        copyPublicDir: false,
-        emptyOutDir: false,
-        lib: {
-          entry: file,
-          fileName: () => path.basename(filePath),
-          formats: ['es'],
-        },
-        minify: false,
-        outDir: path.join(OUT_DIR, path.dirname(filePath)),
-        rollupOptions: {
-          external,
-          output: { format: 'es', paths },
-          plugins,
-        },
-        sourcemap: false,
-        target: ['esnext'],
-      },
-      configFile: false,
-      logLevel: 'warn',
-    };
-  }
-
-  it('uses es format', () => {
-    const config = buildConfig('/src/react.js', 'react.js');
-    assert.equal(config.build.rollupOptions.output.format, 'es');
-  });
-
-  it('sets the entry to the provided file', () => {
-    const config = buildConfig('/src/react.js', 'react.js');
-    assert.equal(config.build.lib.entry, '/src/react.js');
-  });
-
-  it('uses the filename from filePath', () => {
-    const config = buildConfig('/src/sub/currency.js', 'sub/currency.js');
-    assert.equal(config.build.lib.fileName(), 'currency.js');
-  });
-
-  it('merges external and paths into rollupOptions', () => {
-    const config = buildConfig('/src/react-dom.js', 'react-dom.js', {
-      external: ['react'],
-      paths: { react: './react.js' },
-    });
-    assert.deepEqual(config.build.rollupOptions.external, ['react']);
-    assert.deepEqual(config.build.rollupOptions.output.paths, { react: './react.js' });
-  });
-
-  it('passes plugins into rollupOptions', () => {
-    const plugin = { name: 'test', transform: () => {} };
-    const config = buildConfig('/src/react.js', 'react.js', { plugins: [plugin] });
-    assert.equal(config.build.rollupOptions.plugins[0], plugin);
-  });
-
-  it('disables minification', () => {
-    const config = buildConfig('/src/react.js', 'react.js');
-    assert.equal(config.build.minify, false);
-  });
-
-  it('supports object config (not just array)', () => {
-    // Simulate the rawConfig parsing logic from vite.postinstall.js
-    function normalise(raw) {
-      return Array.isArray(raw) ? { plugins: raw } : raw;
-    }
-    assert.deepEqual(normalise([1, 2]), { plugins: [1, 2] });
-    assert.deepEqual(normalise({ external: ['react'] }), { external: ['react'] });
-  });
-});
-
 // ─── SSE ──────────────────────────────────────────────────────────────────
 
-describe('SSE client registry', async () => {
-  const { addSseClient, removeSseClient, performJavaScriptInWebViewer } =
-    await import('../lib/sse.js');
+import { addSseClient, removeSseClient, performJavaScriptInWebViewer } from '../lib/sse.js';
+
+describe('SSE client registry', () => {
 
   it('broadcasts to registered clients', () => {
     const written = [];
@@ -191,16 +116,15 @@ describe('SSE client registry', async () => {
     assert.deepEqual(payload.args, ['/list']);
   });
 
-  it('broadcasts to multiple clients simultaneously', () => {
+  it('replaces the previous client when a new one connects', () => {
     const a = [], b = [];
-    const ca = { write: d => a.push(d) };
-    const cb = { write: d => b.push(d) };
+    const ca = { write: d => a.push(d), end() {} };
+    const cb = { write: d => b.push(d), end() {} };
     addSseClient(ca);
-    addSseClient(cb);
+    addSseClient(cb);  // clears ca, registers cb
     performJavaScriptInWebViewer('ping');
-    removeSseClient(ca);
     removeSseClient(cb);
-    assert.equal(a.length, 1);
-    assert.equal(b.length, 1);
+    assert.equal(a.length, 0, 'old client should not receive after replacement');
+    assert.equal(b.length, 1, 'new client should receive');
   });
 });

@@ -17,4 +17,3 @@ Open http://localhost:3000
 - `t.*` element builders with inline event handlers
 - `computed(() => ...)` for derived list rendering
 - `addConnectedCallback` for post-mount DOM work
-- `front-end-dependencies/` for both `currency.js` and `kensington`

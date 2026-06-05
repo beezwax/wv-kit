@@ -1,5 +1,5 @@
-import data from './data.json' with { type: 'json' };
-import { t } from '../../shared/installed/kensington.js';
+import data from './data.json';
+import { t } from 'kensington';
 
 export default t.button({
   type: 'button',

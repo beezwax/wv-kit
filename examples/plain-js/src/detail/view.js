@@ -1,5 +1,6 @@
 import filemakerScripts from '../shared/filemaker-scripts.js';
 import { formatPrice } from '../shared/product-utils.js';
+import { buildFormFields } from './form-fields.js';
 
 let currentProduct = null;
 
@@ -43,43 +44,6 @@ export default function buildApp() {
     <p id="loading-msg" class="text-muted">Loading product…</p>
 
     <form id="detail-form" class="d-none">
-      <div class="row g-3">
-        <div class="col-md-6">
-          <label class="form-label fw-medium" for="f-name">Name</label>
-          <input id="f-name" class="form-control" type="text" required>
-        </div>
-        <div class="col-md-6">
-          <label class="form-label fw-medium" for="f-sku">SKU</label>
-          <input id="f-sku" class="form-control" type="text" required>
-        </div>
-        <div class="col-md-4">
-          <label class="form-label fw-medium" for="f-category">Category</label>
-          <input id="f-category" class="form-control" type="text" required>
-        </div>
-        <div class="col-md-4">
-          <label class="form-label fw-medium" for="f-price">Price</label>
-          <input id="f-price" class="form-control" type="number" step="0.01" min="0" required>
-        </div>
-        <div class="col-md-4">
-          <label class="form-label fw-medium d-block">Formatted</label>
-          <span id="f-price-fmt" class="form-control-plaintext fw-bold text-success fs-5"></span>
-        </div>
-        <div class="col-md-3">
-          <label class="form-label fw-medium" for="f-stock">Stock</label>
-          <input id="f-stock" class="form-control" type="number" min="0" required>
-        </div>
-        <div class="col-md-3">
-          <label class="form-label fw-medium" for="f-status">Status</label>
-          <select id="f-status" class="form-select">
-            <option value="active">Active</option>
-            <option value="discontinued">Discontinued</option>
-          </select>
-        </div>
-        <div class="col-12">
-          <label class="form-label fw-medium" for="f-description">Description</label>
-          <textarea id="f-description" class="form-control" rows="3"></textarea>
-        </div>
-      </div>
       <div class="d-flex gap-2 mt-4 pt-3 border-top">
         <button id="save-btn" class="btn btn-primary" type="submit">Save</button>
         <button id="delete-btn" class="btn btn-outline-danger ms-auto" type="button">Delete</button>
@@ -88,6 +52,9 @@ export default function buildApp() {
 
     <div id="toast" class="d-none"></div>
   `;
+
+  const form = app.querySelector('#detail-form');
+  form.insertBefore(buildFormFields(), form.firstElementChild);
 
   queueMicrotask(() => {
     document.getElementById('back-btn').addEventListener('click', () => {
