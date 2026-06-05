@@ -10,6 +10,9 @@
   "bin": {
     "wv-kit": "./bin/wv-kit.js"
   },
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
   "files": [
     "AGENTS.md",
     "bin",
