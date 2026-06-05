@@ -43,9 +43,9 @@ export default function buildApp() {
   return t.div({ class: 'container py-3' }, [
     t.div({ class: 'd-flex align-items-center gap-3 mb-3 flex-wrap' }, [
       t.h1({ class: 'fs-4 mb-0' }, 'Product Catalog'),
-      t.span({ class: 'text-muted small' },
-        computed(() => `${filtered.get().length} product${filtered.get().length !== 1 ? 's' : ''}`),
-      ),
+      t.span({ class: 'text-muted small' }, [
+        computed(() => `${filtered.get().length} product${filtered.get().length !== 1 ? 's' : ''}`)
+      ]),
       t.input({
         class: 'form-control w-auto',
         placeholder: 'Search name or SKU…',
@@ -69,28 +69,22 @@ export default function buildApp() {
         onclick() { filemakerScripts.navigateToDetail('new'); },
       }, '+ New Product'),
     ]),
-    t.div({ class: 'table-responsive' },
-      t.table({ class: 'table table-hover align-middle mb-0' }, [
-        t.thead({ class: 'table-light' },
-          t.tr([
+    t.div({ class: 'table-responsive' }, t.table({ class: 'table table-hover align-middle mb-0' }, [
+        t.thead({ class: 'table-light' }, t.tr([
             t.th('Name'),
             t.th('SKU'),
             t.th('Category'),
             t.th({ class: 'text-end' }, 'Price'),
             t.th({ class: 'text-end' }, 'Stock'),
             t.th('Status'),
-          ]),
-        ),
-        t.tbody(
-          computed(() => {
+          ]),),
+        t.tbody(computed(() => {
             const rows = filtered.get();
             if (rows.length === 0) {
               return t.tr(t.td({ colspan: 6, class: 'text-center text-muted py-4' }, 'No products found'));
             }
             return rows.map(productRow);
-          }),
-        ),
-      ]),
-    ),
+          }),),
+      ]),),
   ]).toElement();
 }

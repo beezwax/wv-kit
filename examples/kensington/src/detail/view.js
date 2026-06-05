@@ -28,7 +28,10 @@ export function loadProduct(p) {
 
 export function showSaveResult(result) {
   saving.set(false);
-  toast.set({ message: result.success ? '✓ Saved' : `Error: ${result.error}`, type: result.success ? 'success' : 'danger' });
+  toast.set({
+    message: result.success ? '✓ Saved' : `Error: ${result.error}`,
+    type: result.success ? 'success' : 'danger'
+  });
   setTimeout(() => toast.set(null), 3000);
 }
 
@@ -46,7 +49,9 @@ export default function buildApp() {
   const saveBtnLabel   = saving.transform(s => s ? 'Saving…' : 'Save');
   const isNew          = product.transform(p => p?.id === 'new');
   const title          = computed(() => product.get()?.id === 'new' ? 'New Product' : name.get());
-  const updatedLabel   = computed(() => product.get()?.id === 'new' ? '' : product.get() ? `Updated: ${product.get().updatedAt}` : '');
+  const updatedLabel   = computed(() => {
+    return product.get()?.id === 'new' ? '' : product.get() ? `Updated: ${product.get().updatedAt}` : ''
+  });
 
   const view = t.div({ class: 'container py-3' }, [
     t.div({ class: 'd-flex align-items-center gap-3 mb-4' }, [
@@ -66,16 +71,46 @@ export default function buildApp() {
     t.div({ prop: { hidden: product.transform(p => !p) } }, [
       t.div({ class: 'row g-3' }, [
         t.div({ class: 'col-md-6' }, [
-          field('Name', t.input({ class: 'form-control', type: 'text', prop: { value: name }, oninput(e) { name.set(e.target.value); } })),
+          field('Name', [
+            t.input({
+              class: 'form-control',
+              type: 'text',
+              prop: { value: name },
+              oninput(e) { name.set(e.target.value); }
+            }),
+          ]),
         ]),
         t.div({ class: 'col-md-6' }, [
-          field('SKU', t.input({ class: 'form-control', type: 'text', prop: { value: sku }, oninput(e) { sku.set(e.target.value); } })),
+          field('SKU', [
+            t.input({
+              class: 'form-control',
+              type: 'text',
+              prop: { value: sku },
+              oninput(e) { sku.set(e.target.value); },
+            }),
+          ]),
         ]),
         t.div({ class: 'col-md-4' }, [
-          field('Category', t.input({ class: 'form-control', type: 'text', prop: { value: category }, oninput(e) { category.set(e.target.value); } })),
+          field('Category', [
+            t.input({
+              class: 'form-control',
+              type: 'text',
+              prop: { value: category },
+              oninput(e) { category.set(e.target.value); },
+            }),
+          ]),
         ]),
         t.div({ class: 'col-md-4' }, [
-          field('Price', t.input({ class: 'form-control', type: 'number', step: '0.01', min: '0', prop: { value: price }, oninput(e) { price.set(parseFloat(e.target.value) || 0); } })),
+          field('Price', [
+            t.input({
+              class: 'form-control',
+              type: 'number',
+              step: '0.01',
+              min: '0',
+              prop: { value: price },
+              oninput(e) { price.set(parseFloat(e.target.value) || 0); },
+            }),
+          ]),
         ]),
         t.div({ class: 'col-md-4' }, [
           t.div({ class: 'mb-3' }, [
@@ -84,16 +119,37 @@ export default function buildApp() {
           ]),
         ]),
         t.div({ class: 'col-md-3' }, [
-          field('Stock', t.input({ class: 'form-control', type: 'number', min: '0', prop: { value: stock }, oninput(e) { stock.set(parseInt(e.target.value, 10) || 0); } })),
+          field('Stock', [
+            t.input({
+              class: 'form-control',
+              type: 'number',
+              min: '0',
+              prop: { value: stock },
+              oninput(e) { stock.set(parseInt(e.target.value, 10) || 0); },
+            }),
+          ]),
         ]),
         t.div({ class: 'col-md-3' }, [
-          field('Status', t.select({ class: 'form-select', prop: { value: status }, onchange(e) { status.set(e.target.value); } }, [
-            t.option({ value: 'active' }, 'Active'),
-            t.option({ value: 'discontinued' }, 'Discontinued'),
-          ])),
+          field('Status', [
+            t.select({
+              class: 'form-select',
+              prop: { value: status },
+              onchange(e) { status.set(e.target.value); }
+            }, [
+              t.option({ value: 'active' }, 'Active'),
+              t.option({ value: 'discontinued' }, 'Discontinued'),
+            ]),
+          ]),
         ]),
         t.div({ class: 'col-12' }, [
-          field('Description', t.textarea({ class: 'form-control', rows: 3, prop: { value: description }, oninput(e) { description.set(e.target.value); } })),
+          field('Description', [
+            t.textarea({
+              class: 'form-control',
+              rows: 3,
+              prop: { value: description },
+              oninput(e) { description.set(e.target.value); },
+            }),
+          ]),
         ]),
       ]),
 
@@ -106,8 +162,12 @@ export default function buildApp() {
             saving.set(true);
             filemakerScripts.saveProduct({
               ...product.get(),
-              name: name.get(), sku: sku.get(), category: category.get(),
-              price: price.get(), stock: stock.get(), status: status.get(),
+              name: name.get(),
+              sku: sku.get(),
+              category: category.get(),
+              price: price.get(),
+              stock: stock.get(),
+              status: status.get(),
               description: description.get(),
             });
           },

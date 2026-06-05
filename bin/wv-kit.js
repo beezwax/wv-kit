@@ -7,19 +7,8 @@ if (command === 'start') {
   process.argv.splice(2, 1);
   await import('../lib/build.js');
 } else if (command === 'check') {
-  const { check } = await import('../lib/check.js');
-  const findings = check();
-  if (findings.length === 0) {
-    console.log('✓  No FileMaker compatibility issues found.');
-  } else {
-    for (const f of findings) {
-      console.warn(`\n⚠  ${f.file}:${f.line}  [${f.rule}]`);
-      console.warn(`   ${f.message}`);
-      console.warn(`   ${f.source}`);
-    }
-    console.warn(`\n${findings.length} issue${findings.length !== 1 ? 's' : ''} found.`);
-    process.exit(1);
-  }
+  const { runEslint } = await import('../lib/lint.js');
+  runEslint();
 } else if (command === 'install') {
   const { execFileSync } = await import('node:child_process');
   const { fileURLToPath } = await import('node:url');
