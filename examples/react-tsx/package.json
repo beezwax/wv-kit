@@ -1,0 +1,20 @@
+{
+  "name": "wv-kit-example-react-tsx",
+  "version": "1.0.0",
+  "description": "wv-kit example — React + TypeScript product catalog",
+  "type": "module",
+  "scripts": {
+    "start": "node --watch node_modules/wv-kit/lib/server.js",
+    "build": "wv-kit build",
+    "typecheck": "tsc --noEmit",
+    "postinstall": "node -e \"const {cpSync,mkdirSync}=require('fs');mkdirSync('node_modules/@types',{recursive:true});['react','react-dom','csstype'].forEach(p=>{try{cpSync('.types/'+p,'node_modules/@types/'+p,{recursive:true,force:true})}catch{}})\" && wv-kit install"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "^4.4.1",
+    "currency.js": "^2.0.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "vite": "8.0.16",
+    "wv-kit": "file:../.."
+  }
+}

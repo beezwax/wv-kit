@@ -1,0 +1,16 @@
+{
+  "name": "wv-kit-example-plain-js",
+  "version": "1.0.0",
+  "description": "wv-kit example — plain HTML/JS product catalog",
+  "type": "module",
+  "scripts": {
+    "start": "node --watch node_modules/wv-kit/lib/server.js",
+    "build": "wv-kit build",
+    "postinstall": "wv-kit install"
+  },
+  "dependencies": {
+    "currency.js": "^2.0.4",
+    "vite": "8.0.16",
+    "wv-kit": "file:../.."
+  }
+}

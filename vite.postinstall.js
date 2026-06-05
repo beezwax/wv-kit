@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, copyFileSync, rmSync } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -10,7 +10,7 @@ const PROJECT_DIR = process.cwd();
 const SRC_DIR = path.join(PROJECT_DIR, 'front-end-dependencies');
 const OUT_DIR = path.join(PROJECT_DIR, 'src/shared/installed');
 
-function buildConfig(file, filePath, plugins = []) {
+function buildConfig(file, filePath, { plugins = [], external = [], paths = {} } = {}) {
   return {
     build: {
       copyPublicDir: false,
@@ -23,7 +23,8 @@ function buildConfig(file, filePath, plugins = []) {
       minify: false,
       outDir: path.join(OUT_DIR, path.dirname(filePath)),
       rollupOptions: {
-        output: { format: 'es' },
+        external,
+        output: { format: 'es', paths },
         plugins,
       },
       sourcemap: false,
@@ -48,10 +49,17 @@ async function buildStart() {
   for (const file of files) {
     const filePath = path.relative(SRC_DIR, file);
     const configFile = file.replace(/\.js$/, '.config.js');
-    const plugins = existsSync(configFile)
+    const rawConfig = existsSync(configFile)
       ? (await import(pathToFileURL(configFile).href)).default
       : [];
-    await build(buildConfig(file, filePath, plugins));
+    const config = Array.isArray(rawConfig) ? { plugins: rawConfig } : rawConfig;
+    await build(buildConfig(file, filePath, config));
+    const dtsSource = file.replace(/\.js$/, '.d.ts');
+    if (existsSync(dtsSource)) {
+      const dtsDest = path.join(OUT_DIR, path.dirname(filePath), path.basename(filePath, '.js') + '.d.ts');
+      mkdirSync(path.dirname(dtsDest), { recursive: true });
+      copyFileSync(dtsSource, dtsDest);
+    }
     console.log(`  ✓  ${filePath}  →  ${path.join(OUT_DIR, filePath)}`);
   }
   process.exit(0);
