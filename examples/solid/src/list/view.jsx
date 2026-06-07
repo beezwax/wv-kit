@@ -7,8 +7,7 @@ const [products, setProducts] = createSignal([]);
 const [query, setQuery] = createSignal('');
 const [category, setCategory] = createSignal('');
 
-export function loadProducts(data) { setProducts(data); setQuery(''); setCategory(''); }
-export { setProducts };
+export function loadProducts(data) { setProducts(data); }
 
 const categories = createMemo(() => {
   const cats = [...new Set(products().map(p => p.category))].sort();

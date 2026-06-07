@@ -4,7 +4,7 @@
   "description": "wv-kit example — SolidJS product catalog",
   "type": "module",
   "scripts": {
-    "start": "node --watch-path=src --watch-path=dev-server node_modules/wv-kit/lib/server.js",
+    "start": "node --watch-path=dev-server node_modules/wv-kit/lib/server.js",
     "build": "wv-kit build",
     "lint": "eslint ."
   },

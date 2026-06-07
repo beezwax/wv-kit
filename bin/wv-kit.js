@@ -9,7 +9,10 @@ if (command === 'start') {
 } else if (command === 'check') {
   const { runEslint } = await import('../lib/lint.js');
   runEslint();
+} else if (command === 'init') {
+  const { runInit } = await import('../lib/init.js');
+  await runInit(rest);
 } else {
-  console.error(`Unknown command: ${command}\nUsage: wv-kit [start | build [viewer...] | check]`);
+  console.error(`Unknown command: ${command}\nUsage: wv-kit [start | build [viewer...] | check | init [dir]]`);
   process.exit(1);
 }

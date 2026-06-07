@@ -26,7 +26,7 @@
     "sku": "IPAD-PRO-13",
     "name": "iPad Pro 13-inch M4",
     "category": "Tablets",
-    "price": 1299.00,
+    "price": 1299,
     "stock": 34,
     "status": "active",
     "description": "Supercharged by the M4 chip with Ultra Retina XDR display, Apple Pencil Pro support, and up to 16GB of unified memory.",
@@ -85,6 +85,17 @@
     "stock": 211,
     "status": "active",
     "description": "Portable NVMe SSD with up to 1050 MB/s read speeds, AES 256-bit hardware encryption, and shock-resistant design.",
-    "updatedAt": "2024-11-01"
+    "updatedAt": "2026-06-07"
+  },
+  {
+    "id": "prod-1780870945691",
+    "name": "abc",
+    "sku": "123",
+    "category": "Audio",
+    "price": 100,
+    "stock": 3,
+    "status": "discontinued",
+    "description": "dgf dgsd",
+    "updatedAt": "2026-06-07"
   }
 ]

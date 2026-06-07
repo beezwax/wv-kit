@@ -1,38 +1,19 @@
-import { LitElement, html } from 'lit';
+import { html } from 'lit';
 import filemakerScripts from '../shared/filemaker-scripts.js';
 import { formatPrice, statusClass } from '../shared/product-utils.js';
 
-class ProductRow extends LitElement {
-  static properties = {
-    product: {},
-  };
-
-  createRenderRoot() { return this; }
-
-  constructor() {
-    super();
-    this.product = {};
-  }
-
-  render() {
-    const p = this.product;
-    return html`
-      <tr style="cursor:pointer" @click=${() => filemakerScripts.navigateToDetail(p.id)}>
-        <td class="fw-medium">${p.name}</td>
-        <td><code class="text-muted">${p.sku}</code></td>
-        <td>${p.category}</td>
-        <td class="text-end">${formatPrice(p.price)}</td>
-        <td class="text-end">${p.stock}</td>
-        <td><span class="badge bg-${statusClass(p.status)}">${p.status}</span></td>
-      </tr>
-    `;
-  }
-}
-
-customElements.define('product-row', ProductRow);
-
+// Returns a TemplateResult, not a custom element. <tbody> only accepts <tr>
+// children per the HTML spec, so we inline the row into the parent template
+// rather than wrapping it in a <product-row> tag.
 export function renderProductRow(product) {
-  const el = document.createElement('product-row');
-  el.product = product;
-  return el;
+  return html`
+    <tr style="cursor:pointer" @click=${() => filemakerScripts.navigateToDetail(product.id)}>
+      <td class="fw-medium">${product.name}</td>
+      <td><code class="text-muted">${product.sku}</code></td>
+      <td>${product.category}</td>
+      <td class="text-end">${formatPrice(product.price)}</td>
+      <td class="text-end">${product.stock}</td>
+      <td><span class="badge bg-${statusClass(product.status)}">${product.status}</span></td>
+    </tr>
+  `;
 }

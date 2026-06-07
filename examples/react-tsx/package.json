@@ -4,7 +4,7 @@
   "description": "wv-kit example — React + TypeScript product catalog",
   "type": "module",
   "scripts": {
-    "start": "node --watch-path=src --watch-path=dev-server node_modules/wv-kit/lib/server.js",
+    "start": "node --watch-path=dev-server node_modules/wv-kit/lib/server.js",
     "build": "wv-kit build",
     "typecheck": "tsc --noEmit",
     "postinstall": "node -e \"const {cpSync,mkdirSync}=require('fs');mkdirSync('node_modules/@types',{recursive:true});['react','react-dom','csstype'].forEach(p=>{try{cpSync('.types/'+p,'node_modules/@types/'+p,{recursive:true,force:true})}catch{}})\""

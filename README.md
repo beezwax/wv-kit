@@ -11,7 +11,25 @@ Dev server and build pipeline for [FileMaker web viewer](https://help.claris.com
 - **ESLint plugin** — catches patterns that don't work in a FileMaker web viewer (navigation via `window.location`, undeclared bare imports, missing default export, etc.)
 - **TypeScript / JSX / TSX** — auto-transformed by esbuild in dev; Vite handles production
 
-## Install
+## Quick start
+
+Scaffold a new project — the init script asks for the rendering library, TypeScript, JSX, single- vs multi-page, viewer names, and whether to seed a working FileMaker ping/pong sample:
+
+```bash
+npm i -g github:beezwax/wv-kit
+npx wv-kit init my-viewer
+cd my-viewer
+npm install
+npm start
+```
+
+Open http://localhost:3000 — the dev server auto-redirects to the first viewer.
+
+`init` writes `package.json`, `vite.config.js`, `eslint.config.js`, the `src/` skeleton, a `dev-server/mocks.js` stub (when sample is selected), and a project-specific `CLAUDE.md` that links AI agents to `node_modules/wv-kit/AGENTS.md`.
+
+Supported libraries: plain JS, React (with or without JSX/TS), Lit, SolidJS (with or without JSX), Svelte 5, Kensington.
+
+## Install into an existing project
 
 ```bash
 npm install wv-kit
@@ -61,7 +79,8 @@ dev-server/
 
 | Command | What it does |
 |---|---|
-| `wv-kit start` | Start the dev server on port 3000 |
+| `wv-kit init [dir]` | Interactive scaffolder — pick library, TypeScript, JSX, viewer layout, optional sample |
+| `wv-kit start` | Start the dev server (port from `$PORT`, default 3000) |
 | `wv-kit build [viewer…]` | Build one or all viewers → `dist/*.html` |
 | `wv-kit check` | Run ESLint only (same as the lint step in `build`) |
 
@@ -319,6 +338,11 @@ export default buildApp();
 
 ---
 
+## Examples
+
+The [`examples/`](./examples) directory has a fully-working product-catalog project per supported library — `plain-js`, `kensington`, `lit`, `react-tsx`, `solid`, `svelte`. Useful as reference for outbound script calls, inbound callbacks, mock data, and the dev nav.
+
 ## See also
 
-`AGENTS.md` — detailed guide for AI agents working on viewer projects, including Kensington, React, and plain JS patterns.
+- `AGENTS.md` — detailed guide for AI agents working on viewer projects, including Kensington, React, and plain JS patterns.
+- `CONTRIBUTING.md` — local dev setup and the test suite layout, for working on wv-kit itself.

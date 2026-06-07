@@ -20,7 +20,7 @@ Open http://localhost:3000 — the dev server auto-redirects to `/list`.
 
 - FileMaker script calls via `src/shared/filemaker-scripts.js`
 - Inbound FM callbacks: `loadData`, `loadDetail`, `onSaveResult`, `onDeleteResult`
-- Dev mocks that read/write `dev-server/data/products.json`
+- Dev mocks that read/write `src/list/dev/data.json` (single source of truth — saves persist there)
 - Dev route: `GET /api/products` (inspect data in browser or curl)
 - `nav-bar-content.js` in each viewer (visible in the dev nav modal)
 - Shared utilities in `src/shared/product-utils.js`

@@ -4,8 +4,6 @@ let _categoryFilter = $state('');
 
 export function setProducts(data) {
   _products = data;
-  _searchQuery = '';
-  _categoryFilter = '';
 }
 
 export function getProducts() { return _products; }

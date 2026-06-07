@@ -7,8 +7,6 @@ let _element = null;
 export function setProducts(products) {
   if (!_element) return;
   _element.products = products;
-  _element.query    = '';
-  _element.category = '';
 }
 
 class ProductList extends LitElement {
