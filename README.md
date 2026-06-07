@@ -16,12 +16,13 @@ Dev server and build pipeline for [FileMaker web viewer](https://help.claris.com
 Scaffold a new project — the init script asks for the rendering library, TypeScript, JSX, single- vs multi-page, viewer names, and whether to seed a working FileMaker ping/pong sample:
 
 ```bash
-npm i -g github:beezwax/wv-kit
-npx wv-kit init my-viewer
+npx github:beezwax/wv-kit init my-viewer
 cd my-viewer
 npm install
 npm start
 ```
+
+`npx` fetches wv-kit directly from GitHub for the one-shot init — no global install needed. (If you'd rather install globally, `npm i -g github:beezwax/wv-kit` then run `wv-kit init my-viewer` — `npx wv-kit` won't see the global install and will 404 on the npm registry.)
 
 Open http://localhost:3000 — the dev server auto-redirects to the first viewer.
 
