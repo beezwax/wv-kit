@@ -116,15 +116,27 @@ describe('SSE client registry', () => {
     assert.deepEqual(payload.args, ['/list']);
   });
 
-  it('replaces the previous client when a new one connects', () => {
+  it('broadcasts to every connected client (multi-tab dev)', () => {
     const a = [], b = [];
     const ca = { write: d => a.push(d), end() {} };
     const cb = { write: d => b.push(d), end() {} };
     addSseClient(ca);
-    addSseClient(cb);  // clears ca, registers cb
+    addSseClient(cb);  // ca is NOT kicked — both stay registered
     performJavaScriptInWebViewer('ping');
+    removeSseClient(ca);
     removeSseClient(cb);
-    assert.equal(a.length, 0, 'old client should not receive after replacement');
-    assert.equal(b.length, 1, 'new client should receive');
+    assert.equal(a.length, 1, 'first client should still receive after a second connects');
+    assert.equal(b.length, 1, 'second client should also receive');
+  });
+
+  it('drops clients only when explicitly removed (tab close)', () => {
+    const received = [];
+    const client = { write: d => received.push(d) };
+    addSseClient(client);
+    performJavaScriptInWebViewer('a');
+    removeSseClient(client);
+    performJavaScriptInWebViewer('b');
+    assert.equal(received.length, 1, 'should only receive while registered');
+    assert.ok(received[0].includes('"fn":"a"'));
   });
 });

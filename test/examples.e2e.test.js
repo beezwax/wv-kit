@@ -49,7 +49,7 @@ function startServer(cwd) {
 
     const onStdout = chunk => {
       const s = chunk.toString();
-      if (!started && s.includes('server started')) {
+      if (!started && /running at http/.test(s)) {
         started = true;
         child.stdout.off('data', onStdout);
         resolve(child);
