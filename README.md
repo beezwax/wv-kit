@@ -16,13 +16,13 @@ Dev server and build pipeline for [FileMaker web viewer](https://help.claris.com
 Scaffold a new project — the init script asks for the rendering library, TypeScript, JSX, single- vs multi-page, viewer names, and whether to seed a working FileMaker ping/pong sample:
 
 ```bash
-npx github:beezwax/wv-kit init my-viewer
-cd my-viewer
+npx github:beezwax/wv-kit init
+cd <project-name>   # the directory init created
 npm install
 npm start
 ```
 
-`npx` fetches wv-kit directly from GitHub for the one-shot init — no global install needed. (If you'd rather install globally, `npm i -g github:beezwax/wv-kit` then run `wv-kit init my-viewer` — `npx wv-kit` won't see the global install and will 404 on the npm registry.)
+`init` interactively asks for a project name (and everything else); the directory is created from that name. `npx` fetches wv-kit directly from GitHub for the one-shot init — no global install needed. (If you'd rather install globally, `npm i -g github:beezwax/wv-kit` then run `wv-kit init` — `npx wv-kit` won't see the global install and will 404 on the npm registry.)
 
 Open http://localhost:3000 — the dev server auto-redirects to the first viewer.
 
@@ -80,7 +80,7 @@ dev-server/
 
 | Command | What it does |
 |---|---|
-| `wv-kit init [dir]` | Interactive scaffolder — pick library, TypeScript, JSX, viewer layout, optional sample |
+| `wv-kit init` | Interactive scaffolder — asks for project name, library, TypeScript, JSX, viewer count, optional sample |
 | `wv-kit start` | Start the dev server (port from `$PORT`, default 3000) |
 | `wv-kit build [viewer…]` | Build one or all viewers → `dist/*.html` |
 | `wv-kit check` | Run ESLint only (same as the lint step in `build`) |
