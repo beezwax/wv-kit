@@ -1111,6 +1111,42 @@ Each output is a self-contained HTML file. Paste it into FileMaker via **Admin �
 
 ---
 
+## Previewing the built HTML before paste
+
+```bash
+wv-kit preview          # default port 3001, or set $PORT
+```
+
+Serves the built `dist/<viewer>.html` files inside an iframe-based shell that simulates the FileMaker host. Useful as a final sanity check before pasting the HTML into FileMaker; also the cleanest URL to share with a stakeholder reviewing the viewer.
+
+### How it differs from `wv-kit start`
+
+| | `wv-kit start` | `wv-kit preview` |
+|---|---|---|
+| Runs | source files, transformed by Vite middleware | the built `dist/<viewer>.html`, byte-for-byte |
+| Hosts viewer in | top-level page (same realm as dev runtime) | sandboxed iframe inside a parent shell |
+| `window.FileMaker` | installed inline, same realm | injected by the parent into the iframe — same model as the real FileMaker host |
+| `window.location` | top-level (parent URL bar changes on `goToLayout`) | iframe-scoped (matches FileMaker's layout-scoped nav) |
+| Iteration | edit → reload | edit → `wv-kit build` → reload |
+
+The fidelity wins are: production-bundle behavior (any divergence between Vite's dev transforms and the production bundler shows up here), and the cross-realm `window.FileMaker` install path (which matches FileMaker's host model and validates that wv-kit's queue-until-FileMaker logic works under separated realms).
+
+### Wire model
+
+- `GET /preview/:viewer` → parent shell HTML containing `<iframe src="/dist/:viewer.html?<query>">`. Parent owns the SSE listener, the FileMaker shim install, the dev-nav modal, and the URL bar.
+- `GET /dist/:viewer.html` → the built file, verbatim. No injection.
+- `GET /dev-overlay/:viewer.js` → on-the-fly esbuild bundle of `src/<viewer>/dev/nav-bar-content.js` as a script-mode IIFE. The parent runs it via `new Function('document', 'window', code)(iframe.contentDocument, iframe.contentWindow)`, so the existing nav-bar-content code (with `document.querySelector(...)` etc.) reaches into the iframe's DOM as it expects. The returned element is `adoptNode`'d into the parent's modal body.
+- `GET /sse`, `POST /script-mock/:name` — identical to the dev server, same `mocks.js` runs.
+- `goToLayout('/list')` → SSE frame → parent translates to `/dist/list.html` and sets `iframe.contentWindow.location.href`. Iframe navigation triggers parent's `load` handler, which re-fires the "navigate to <viewer>" OnLayoutEnter equivalent and `history.replaceState`s the parent URL bar to match.
+
+### Limitations
+
+- **No source maps yet.** The default `dist/` build doesn't ship maps (Vite's production default). Breakpoints in `src/` won't hit anywhere meaningful in preview; you debug against bundled lines. Fix on the table: a future `--debug` build (or auto-rebuild into `.preview-dist/` with inline maps) — flag this when you hit it.
+- **No HMR / file watch.** Preview reflects whatever the last `wv-kit build` produced. Re-run build to see source changes.
+- **Initial visit re-fires the OnLayoutEnter script.** Same model as `start` — the dev-only equivalent of FileMaker's layout-enter trigger. Mocks that side-effect on each invocation (e.g., increment a counter) will fire on every page reload and every in-iframe navigation.
+
+---
+
 ## Things to avoid
 
 **Never** read `window.location` or use `<a href="...">` for navigation outside of `dev/` — see **Production constraints** above.

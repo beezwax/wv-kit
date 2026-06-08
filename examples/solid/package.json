@@ -1,11 +1,12 @@
 {
   "name": "wv-kit-example-solid",
   "version": "1.0.0",
-  "description": "wv-kit example — SolidJS product catalog",
+  "description": "wv-kit example \u2014 SolidJS product catalog",
   "type": "module",
   "scripts": {
     "start": "node --watch-path=dev-server node_modules/wv-kit/lib/server.js",
     "build": "wv-kit build",
+    "preview": "wv-kit preview",
     "lint": "eslint ."
   },
   "dependencies": {

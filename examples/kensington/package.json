@@ -1,12 +1,13 @@
 {
   "name": "wv-kit-example-kensington",
   "version": "1.0.0",
-  "description": "wv-kit example — Kensington reactive product catalog",
+  "description": "wv-kit example \u2014 Kensington reactive product catalog",
   "type": "module",
   "scripts": {
     "start": "node --watch-path=dev-server node_modules/wv-kit/lib/server.js",
     "lint": "eslint src --fix",
-    "build": "wv-kit build"
+    "build": "wv-kit build",
+    "preview": "wv-kit preview"
   },
   "dependencies": {
     "currency.js": "^2.0.4",

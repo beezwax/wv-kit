@@ -12,7 +12,9 @@ if (command === 'start') {
 } else if (command === 'init') {
   const { runInit } = await import('../lib/init.js');
   await runInit();
+} else if (command === 'preview') {
+  await import('../lib/preview.js');
 } else {
-  console.error(`Unknown command: ${command}\nUsage: wv-kit [start | build [viewer...] | check | init]`);
+  console.error(`Unknown command: ${command}\nUsage: wv-kit [start | build [viewer...] | check | preview | init]`);
   process.exit(1);
 }

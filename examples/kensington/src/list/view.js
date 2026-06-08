@@ -6,11 +6,6 @@ export const products = signal([]);
 const query    = signal('');
 const category = signal('');
 
-export function resetFilters() {
-  query.set('');
-  category.set('');
-}
-
 const categories = computed(() =>
   [...new Set(products.get().map(p => p.category))].sort(),
 );

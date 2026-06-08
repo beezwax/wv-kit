@@ -84,9 +84,25 @@ dev-server/
 | `wv-kit init` | Interactive scaffolder — asks for project name, library, TypeScript, JSX, viewer count, optional sample |
 | `wv-kit start` | Start the dev server (port from `$PORT`, default 3000) |
 | `wv-kit build [viewer…]` | Build one or all viewers → `dist/*.html` |
+| `wv-kit preview` | Serve the **built** `dist/*.html` inside an iframe-based FileMaker simulator (port from `$PORT`, default 3001) |
 | `wv-kit check` | Run ESLint only (same as the lint step in `build`) |
 
 `wv-kit build` runs ESLint before building and exits 1 on errors. On macOS the single-viewer form copies the output to the clipboard automatically.
+
+### When to use `start` vs `preview`
+
+| | `wv-kit start` | `wv-kit preview` |
+|---|---|---|
+| Runs | source files, transformed by Vite middleware | the built `dist/<viewer>.html`, served byte-for-byte |
+| Hosts the viewer in | the top-level page (same realm as the dev runtime) | an iframe inside a parent shell that simulates FileMaker |
+| `window.FileMaker` | installed inline, same realm | injected from the parent into the iframe — same model as the real FileMaker host |
+| `window.location` | top-level (URL bar changes on `goToLayout`) | iframe-scoped (matches FileMaker's layout-scoped nav) |
+| Iteration speed | instant — edit, reload, see | requires `npm run build` between changes |
+| Best for | day-to-day development | pre-paste sanity check, demo to stakeholders, isolating "works in start, breaks in dist" bugs |
+
+Most development happens in `start`. `preview` earns its keep right before you copy `dist/<viewer>.html` into FileMaker — it exercises the exact bytes you're about to paste in an environment that mirrors FileMaker's hosting model (sandboxed iframe + externally-injected `FileMaker`). It's also the cleanest way to share the running viewer with a stakeholder, since there's no dev-time scaffolding leaking through.
+
+Mocks come from the project's existing `dev-server/mocks.js`. Dev-nav `nav-bar-content.js` works too — the preview shell bundles it on the fly and runs it in the parent with the iframe's `document` and `window` shadowed in, so existing `document.querySelector(...)` etc. still reach the viewer's DOM. The parent URL bar mirrors the iframe URL (back/forward and bookmarks work).
 
 ## Viewer contract
 

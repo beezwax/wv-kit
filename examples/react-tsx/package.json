@@ -1,11 +1,12 @@
 {
   "name": "wv-kit-example-react-tsx",
   "version": "1.0.0",
-  "description": "wv-kit example — React + TypeScript product catalog",
+  "description": "wv-kit example \u2014 React + TypeScript product catalog",
   "type": "module",
   "scripts": {
     "start": "node --watch-path=dev-server node_modules/wv-kit/lib/server.js",
     "build": "wv-kit build",
+    "preview": "wv-kit preview",
     "typecheck": "tsc --noEmit",
     "postinstall": "node -e \"const {cpSync,mkdirSync}=require('fs');mkdirSync('node_modules/@types',{recursive:true});['react','react-dom','csstype'].forEach(p=>{try{cpSync('.types/'+p,'node_modules/@types/'+p,{recursive:true,force:true})}catch{}})\""
   },
