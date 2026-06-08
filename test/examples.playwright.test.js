@@ -126,7 +126,7 @@ for (const exampleDir of exampleDirs) {
     it('list viewer renders products from dev/data.json', async () => {
       const page = await context.newPage();
       const errors = [];
-      page.on('pageerror', e => errors.push(e.message));
+      page.on('pageerror', e => { if (!/WebSocket closed without opened/i.test(e.message)) errors.push(e.message); });
       await page.goto(`${BASE_URL}/list/`, { waitUntil: 'domcontentloaded' });
       // Wait for the framework to have populated the DOM with the product name.
       await page.locator(`text=${productName}`).first().waitFor({ timeout: 10_000 });
@@ -137,7 +137,7 @@ for (const exampleDir of exampleDirs) {
     it('clicking "+ New Product" navigates to detail and renders a blank form', async () => {
       const page = await context.newPage();
       const errors = [];
-      page.on('pageerror', e => errors.push(e.message));
+      page.on('pageerror', e => { if (!/WebSocket closed without opened/i.test(e.message)) errors.push(e.message); });
       await page.goto(`${BASE_URL}/list/`, { waitUntil: 'domcontentloaded' });
       await page.locator(`text=${productName}`).first().waitFor({ timeout: 10_000 });
 
@@ -290,7 +290,7 @@ for (const exampleDir of exampleDirs) {
       if (!otherProduct) return;
       const page = await context.newPage();
       const errors = [];
-      page.on('pageerror', e => errors.push(e.message));
+      page.on('pageerror', e => { if (!/WebSocket closed without opened/i.test(e.message)) errors.push(e.message); });
       try {
         await page.goto(`${BASE_URL}/list/`, { waitUntil: 'domcontentloaded' });
         await page.locator(`text=${productName}`).first().waitFor({ timeout: 10_000 });

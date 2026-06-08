@@ -104,6 +104,32 @@ Most development happens in `start`. `preview` earns its keep right before you c
 
 Mocks come from the project's existing `dev-server/mocks.js`. Dev-nav `nav-bar-content.js` works too — the preview shell bundles it on the fly and runs it in the parent with the iframe's `document` and `window` shadowed in, so existing `document.querySelector(...)` etc. still reach the viewer's DOM. The parent URL bar mirrors the iframe URL (back/forward and bookmarks work).
 
+## Installing a built viewer in FileMaker
+
+Each `dist/<viewer>.html` is a single self-contained HTML file — every JS, CSS, font, and image is inlined. That's the form FileMaker's web viewer wants.
+
+1. **Build the viewer.** On macOS the single-viewer form copies to the clipboard automatically.
+   ```bash
+   npm run build              # all viewers → dist/*.html
+   npm run build list         # single viewer → dist/list.html (clipboard on macOS)
+   ```
+
+2. **In FileMaker Pro**, open the file in **Layout mode** and select (or insert via `Insert → Web Viewer…`) the web viewer object for the layout you want this viewer to live on.
+
+3. **In Web Viewer Setup**, point the **Web Address** calculation at the HTML via a `data:` URI:
+   ```
+   "data:text/html;charset=utf-8," & GetAsURLEncoded ( Globals::WebViewerHTML )
+   ```
+   Store the HTML in a text field (often a global) and paste the dist HTML in there — keeps the calculation small and lets you update the viewer by re-pasting into the field. (You *can* paste the HTML inline into the calculation, but the editor gets unwieldy at production-bundle sizes.)
+
+4. **Enable** "Allow JavaScript to perform FileMaker scripts" in the Web Viewer Setup — otherwise `window.FileMaker.PerformScriptWithOption(...)` calls from the viewer have no effect.
+
+5. **Recreate each mock as a real FileMaker script.** `dev-server/mocks.js` was written as a line-by-line spec — each handler maps to a FM script that takes `Get(ScriptParameter)` as JSON, does the equivalent FM steps (`Go to Layout`, `Set Field`, `Commit Records`, `Perform JavaScript in Web Viewer`), and matches the script name strings in `src/shared/script-names.{js,ts}`. See `AGENTS.md` → "Mocks are templates for the real FileMaker scripts" for the JS-to-FM translation table.
+
+6. **Trigger the initial data load.** In dev, `src/<viewer>/dev/client.js` plays the role of FileMaker's `OnLayoutEnter` trigger by firing the `navigate to <viewer>` script on page load. In production, attach the same script to the layout's **OnLayoutEnter** trigger so the viewer receives its initial state when the user arrives.
+
+To update the viewer later: rebuild, paste the new HTML into the field, save the record. No FileMaker script changes unless the script-names contract changed.
+
 ## Viewer contract
 
 `index.js` must export a DOM element as its default. wv-kit appends it to `#app` and then fires any `onMount` callbacks.

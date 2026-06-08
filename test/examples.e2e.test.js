@@ -144,10 +144,10 @@ for (const exampleDir of exampleDirs) {
         });
 
         it('Vite transforms the viewer entry module', async () => {
-          const file = viewerIndexFile(srcDir, viewer);
-          // Always request `.js` — Vite will resolve `.ts`/`.tsx`/`.jsx`
-          // transparently when the request comes through its middleware.
-          const url = `${BASE_URL}/src/${viewer}/${file}`;
+          // Request `.js` and let Vite's middleware resolve to the actual
+          // on-disk file (`.ts`/`.tsx`/`.jsx`). That's how the injected
+          // shell loads the entry, so it's the right path to test.
+          const url = `${BASE_URL}/src/${viewer}/index.js`;
           const res = await fetch(url);
           assert.equal(res.status, 200, `failed to fetch ${url}`);
           assert.match(res.headers.get('content-type') ?? '', /javascript/);

@@ -318,13 +318,27 @@ t.button({
 })
 ```
 
-**SVG icons** — use `t.literal` for trusted SVG strings:
+**SVG and MathML** — use the same `t.tagName(attrs, children)` API as HTML. Kensington calls `createElementNS` automatically when serializing `t.svg(...)` or `t.math(...)` (and their descendants), so namespacing is handled for you:
 ```js
 import { t } from 'kensington';
-export function trashIcon() {
-  return t.literal('<svg ...><path .../></svg>');
+export function chevronIcon(direction = 'down') {
+  const rotate = { down: 0, up: 180, left: 90, right: -90 }[direction];
+  return t.svg({
+    xmlns: 'http://www.w3.org/2000/svg',
+    viewBox: '0 0 20 20',
+    fill: 'currentColor',
+    width: 20, height: 20,
+    style: rotate ? { transform: `rotate(${rotate}deg)` } : {},
+    ariaHidden: 'true',
+  },
+    t.path({
+      fillRule: 'evenodd', clipRule: 'evenodd',
+      d: 'M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z',
+    }),
+  );
 }
 ```
+SVG element names that are camelCase in the spec (e.g. `linearGradient`, `clipPath`) keep their casing. All CSS properties are valid as presentation attributes on SVG elements. The same applies to MathML via `t.math(...)`.
 
 
 ---
