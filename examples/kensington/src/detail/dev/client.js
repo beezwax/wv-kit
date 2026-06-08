@@ -1,11 +1,7 @@
-import data from '../../list/dev/data.json';
-import blankProduct from './blank-product.js';
+// Dev-only: trigger the same FM script that "+ New Product" / a list-row
+// click would run. The mock does goToLayout + push loadDetail; goToLayout to
+// the current URL is a no-op, so reload Just Works™.
+import filemakerScripts from '../../shared/filemaker-scripts.js';
 
 const id = new URLSearchParams(window.location.search).get('id') ?? 'new';
-
-if (id === 'new') {
-  window.loadDetail(JSON.stringify(blankProduct));
-} else {
-  const product = data.find(p => p.id === id);
-  if (product) window.loadDetail(JSON.stringify(product));
-}
+filemakerScripts.navigateToDetail(id);

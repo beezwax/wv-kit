@@ -45,7 +45,8 @@ Everything wv-kit exports is reachable from the bare specifier `'wv-kit'` — br
 |---|---|---|
 | `onMount(fn)` | browser | Register a callback to run after the app element is mounted into `#app` |
 | `performFileMakerScript(name, payload?)` | browser | Call a FileMaker script with an optional payload; auto-queues until `window.FileMaker` is available; serializes the payload with `JSON.stringify` |
-| `performJavaScriptInWebViewer(fn, ...args)` | server (mocks) | Push a callback to the browser over SSE; used by `dev-server/mocks.js` to simulate FileMaker pushing data back |
+| `performJavaScriptInWebViewer(fn, ...args)` | server (mocks) | Push a callback to the browser over SSE; used by `dev-server/mocks.js` to simulate FileMaker's `PerformJavaScriptInWebViewer` |
+| `goToLayout(to)` | server (mocks) | Tell the dev page to go to a new path or query — the equivalent of a FileMaker "Go To Layout" script step. `'?…'` updates the query only; anything else replaces the full URL. |
 
 `.d.ts` declarations are bundled alongside the `.js` files, so TypeScript projects get types for these exports automatically.
 
@@ -173,7 +174,17 @@ export default {
 };
 ```
 
-`performJavaScriptInWebViewer` broadcasts to the browser over SSE. Special targets: `'navigate'` sets `window.location.href`, `'navigateSearch'` sets `window.location.search`, `'alert'` calls `window.alert`. All other names call `window[fn](...args)`.
+`performJavaScriptInWebViewer(fn, ...args)` broadcasts over SSE; the browser invokes `window[fn](...args)`. There are no special-cased names — `'alert'` just calls `window.alert`, `'loadData'` calls `window.loadData`, etc.
+
+Navigation is a **separate** call, because in FileMaker it's a "Go To Layout" script step (not JavaScript pushed to the viewer):
+
+```js
+import { goToLayout } from 'wv-kit';
+
+goToLayout('/list');             // window.location.href = '/list'
+goToLayout('/detail?id=42');     // window.location.href = '/detail?id=42'
+goToLayout('?id=42');            // window.location.search = '?id=42' (path preserved)
+```
 
 ## ESLint
 
@@ -283,7 +294,7 @@ import { scriptNames } from './script-names.js';
 export default {
   loadRecord(id)     { performFileMakerScript(scriptNames.loadRecord, { id }); },
   saveRecord(record) { performFileMakerScript(scriptNames.saveRecord, record); },
-  navigate(layout)   { performFileMakerScript(scriptNames.navigate,   { layout }); },
+  goToLayout(layout)   { performFileMakerScript(scriptNames.goToLayout,   { layout }); },
 };
 ```
 
@@ -292,7 +303,7 @@ export default {
 export const scriptNames = {
   loadRecord: 'load record',
   saveRecord: 'save record',
-  navigate:   'navigate',
+  goToLayout:   'goToLayout',
 };
 ```
 

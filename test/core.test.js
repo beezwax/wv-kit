@@ -81,19 +81,37 @@ describe('viewer discovery', () => {
 
 // ─── SSE ──────────────────────────────────────────────────────────────────
 
-import { addSseClient, removeSseClient, performJavaScriptInWebViewer } from '../lib/sse.js';
+import { addSseClient, removeSseClient, performJavaScriptInWebViewer, goToLayout, drainPostGotoQueueTo } from '../lib/sse.js';
 
 describe('SSE client registry', () => {
 
-  it('broadcasts to registered clients', () => {
+  function parseFrame(s) {
+    return JSON.parse(s.replace('data: ', '').trim());
+  }
+
+  it('performJavaScriptInWebViewer broadcasts a js-typed frame to clients', () => {
     const written = [];
     const client = { write: d => written.push(d) };
     addSseClient(client);
     performJavaScriptInWebViewer('loadData', '[]');
     removeSseClient(client);
     assert.equal(written.length, 1);
-    assert.ok(written[0].includes('"fn":"loadData"'));
-    assert.ok(written[0].includes('"args":["[]"]'));
+    const frame = parseFrame(written[0]);
+    assert.equal(frame.type, 'js');
+    assert.equal(frame.fn, 'loadData');
+    assert.deepEqual(frame.args, ['[]']);
+  });
+
+  it('goToLayout() broadcasts a goToLayout-typed frame (separate from js)', () => {
+    const written = [];
+    const client = { write: d => written.push(d) };
+    addSseClient(client);
+    goToLayout('/list');
+    goToLayout('?id=42');
+    removeSseClient(client);
+    assert.equal(written.length, 2);
+    assert.deepEqual(parseFrame(written[0]), { type: 'goToLayout', to: '/list' });
+    assert.deepEqual(parseFrame(written[1]), { type: 'goToLayout', to: '?id=42' });
   });
 
   it('does not broadcast after client is removed', () => {
@@ -102,6 +120,7 @@ describe('SSE client registry', () => {
     addSseClient(client);
     removeSseClient(client);
     performJavaScriptInWebViewer('loadData', '[]');
+    goToLayout('/list');
     assert.equal(written.length, 0);
   });
 
@@ -109,11 +128,10 @@ describe('SSE client registry', () => {
     const written = [];
     const client = { write: d => written.push(d) };
     addSseClient(client);
-    performJavaScriptInWebViewer('navigate', '/list');
+    performJavaScriptInWebViewer('onSaveResult', '{"ok":true}', 42);
     removeSseClient(client);
-    const payload = JSON.parse(written[0].replace('data: ', '').trim());
-    assert.equal(payload.fn, 'navigate');
-    assert.deepEqual(payload.args, ['/list']);
+    const frame = parseFrame(written[0]);
+    assert.deepEqual(frame.args, ['{"ok":true}', 42]);
   });
 
   it('broadcasts to every connected client (multi-tab dev)', () => {
@@ -138,5 +156,42 @@ describe('SSE client registry', () => {
     performJavaScriptInWebViewer('b');
     assert.equal(received.length, 1, 'should only receive while registered');
     assert.ok(received[0].includes('"fn":"a"'));
+  });
+
+  it('replays performJavaScriptInWebViewer calls fired during a goToLayout window to the next client', () => {
+    // No clients connected yet — simulate the mock-handler sequence.
+    goToLayout('/detail?id=42');
+    performJavaScriptInWebViewer('loadData', '{"id":42}');
+
+    // The freshly-loaded /detail page now connects its SSE.
+    const received = [];
+    const client = { write: d => received.push(d) };
+    addSseClient(client);
+    drainPostGotoQueueTo(client);
+    removeSseClient(client);
+
+    assert.equal(received.length, 1, 'one queued js frame should be replayed');
+    const frame = JSON.parse(received[0].replace('data: ', '').trim());
+    assert.equal(frame.type, 'js');
+    assert.equal(frame.fn, 'loadData');
+    assert.deepEqual(frame.args, ['{"id":42}']);
+  });
+
+  it('drainPostGotoQueueTo is a no-op outside the window and drains only once', () => {
+    goToLayout('/x');
+    performJavaScriptInWebViewer('once', 'a');
+
+    const a = [], b = [];
+    const ca = { write: d => a.push(d) };
+    const cb = { write: d => b.push(d) };
+    addSseClient(ca);
+    drainPostGotoQueueTo(ca);   // ca gets the queued frame
+    addSseClient(cb);
+    drainPostGotoQueueTo(cb);   // cb gets nothing — queue was already drained
+    removeSseClient(ca);
+    removeSseClient(cb);
+
+    assert.equal(a.length, 1, 'first new client should receive the queued frame');
+    assert.equal(b.length, 0, 'second new client should not receive a replay');
   });
 });

@@ -128,12 +128,16 @@ describe('no-dev-outside-import', () => {
       { code: "import x from '../shared/utils.js';", filename: 'src/list/view.js' },
       // same-dir import in dev
       { code: "import x from './data.json';",         filename: 'src/list/dev/client.js' },
-      // allowed via rule option
+      // src/shared/ is allowed by default — it's the reusable surface
       {
         code: "import filemakerScripts from '../../shared/filemaker-scripts.js';",
         filename: 'src/list/dev/client.js',
-        options: [{ allow: ['shared/filemaker-scripts.js'] }],
       },
+      {
+        code: "import { scriptNames } from '../../shared/script-names.js';",
+        filename: 'src/detail/dev/nav-bar-content.js',
+      },
+      // additional paths allowed via rule option
       {
         code: "import { x } from '../control-functions.js';",
         filename: 'src/detail/dev/nav-bar-content.js',
@@ -151,7 +155,7 @@ describe('no-dev-outside-import', () => {
         errors: [{ messageId: 'noDevOutsideImport' }],
       },
       {
-        code: "import filemakerScripts from '../../shared/filemaker-scripts.js';",
+        code: "import { state } from '../../detail/state.js';",
         filename: 'src/list/dev/client.js',
         errors: [{ messageId: 'noDevOutsideImport' }],
       },

@@ -4,9 +4,27 @@ This file is for AI agents working on FileMaker web viewer projects. Read it bef
 
 ---
 
-The dev server uses **Vite in middleware mode** for all source file transforms. Express handles wv-kit-specific concerns (viewer HTML injection, SSE, mocks); Vite handles everything in `src/` via the project's `vite.config.js` plugins. For React, add `@vitejs/plugin-react`; for Svelte, add `@sveltejs/vite-plugin-svelte`; for Solid, add `vite-plugin-solid`.
+## Quick reference: how to implement common requests
 
- running inside a FileMaker layout. Each viewer is a **single self-contained HTML file** pasted into FileMaker's admin settings. `wv-kit` provides the dev server and build pipeline for authoring those files.
+| Request | Files to touch |
+|---|---|
+| **Add a new FM script call** (browser → FM) | Add a key to `src/shared/script-names.js`; add a wrapper method to `src/shared/filemaker-scripts.js`; add a handler in `dev-server/mocks.js` |
+| **Add a new FM callback** (FM → browser) | Add the method to the viewer's `control-functions.js` (it's auto-registered on `window` by `index.js`); call it from a mock via `performJavaScriptInWebViewer('<name>', json)` |
+| **Add a new viewer (layout)** | Create `src/<viewer>/index.js`, `view.js`, `control-functions.js`, plus `dev/client.js` that re-fires the viewer's "navigate to" script |
+| **Add a new column/field to the list** | Update the rendering in `src/list/view.js`; if it persists, the existing `saveProduct` mock already round-trips arbitrary fields |
+| **Make the detail page load on direct URL visit / reload** | Already handled: `src/<viewer>/dev/client.js` fires `filemakerScripts.navigateTo<Viewer>(id)`. The mock handler is the single source of truth for "load this record" |
+| **Initial data load on layout open** | In production, FileMaker's OnLayoutEnter runs the navigate-to script. In dev, `src/<viewer>/dev/client.js` plays the same role |
+| **Add a confirmation alert in a mock** | `performJavaScriptInWebViewer('alert', 'message')` — no special-casing, it just calls `window.alert` |
+| **Persist data across server restarts** | Mocks read/write `src/<viewer>/dev/data.json` directly with `fs.readFileSync`/`fs.writeFileSync` on every call. The dev server watches `dev-server/` only, so writes here don't trigger a restart |
+| **Navigate from a mock handler** | `goToLayout('/list')` or `goToLayout(`/detail?id=${id}`)`. A query-only string (`?q=foo`) updates `window.location.search`. No-op when target matches current URL |
+
+The full conventions for each of these are in the rest of this document.
+
+---
+
+A wv-kit project produces one or more web viewers — JavaScript apps running inside a FileMaker layout. Each viewer builds to a **single self-contained HTML file** that's pasted into FileMaker's admin settings; wv-kit provides the dev server and build pipeline for authoring those files.
+
+The dev server uses **Vite in middleware mode** for all source-file transforms. Express handles wv-kit-specific concerns (viewer HTML injection, SSE, mock dispatch); Vite handles everything in `src/` via the project's `vite.config.js` plugins. For React add `@vitejs/plugin-react`; for Svelte add `@sveltejs/vite-plugin-svelte`; for Solid add `vite-plugin-solid`. The server runs at `http://localhost:3000` and prints clickable URLs for each discovered viewer on start.
 
 FileMaker and the browser communicate in two directions:
 
@@ -27,14 +45,15 @@ Everything wv-kit gives you to import comes from the bare specifier `'wv-kit'` �
 |---|---|---|
 | `onMount(fn)` | browser | Register a callback to run after the app element is mounted into `#app` |
 | `performFileMakerScript(name, payload?)` | browser | Call a FileMaker script with an optional payload; auto-queues until `window.FileMaker` is available; serializes payload with `JSON.stringify` |
-| `performJavaScriptInWebViewer(fn, ...args)` | server (mocks) | Push a callback to the browser over SSE; mocks use this to simulate FileMaker pushing data back |
+| `performJavaScriptInWebViewer(fn, ...args)` | server (mocks) | Push a callback to the browser over SSE; mocks use this to simulate FileMaker's `PerformJavaScriptInWebViewer` |
+| `goToLayout(to)` | server (mocks) | "Go To Layout" equivalent — sends a typed nav frame to the browser. `'?…'` updates the query only; anything else replaces the URL |
 
 ```js
 // browser
 import { onMount, performFileMakerScript } from 'wv-kit';
 
 // server (dev-server/mocks.js)
-import { performJavaScriptInWebViewer } from 'wv-kit';
+import { performJavaScriptInWebViewer, goToLayout } from 'wv-kit';
 ```
 
 `flushMounts` is also exported but is internal — wv-kit's injected script calls it via `window.__wvFlushMounts?.()` after appending the app element. `addSseClient` / `removeSseClient` are likewise internal, used by `wv-kit/lib/server.js`.
@@ -65,35 +84,39 @@ src/
     control-functions.js  # Inbound FM callbacks, exposed via Object.assign(window, …)
     style.css             # Viewer-specific styles
     dev/
-      client.js           # Dev-only: imports data.json and calls window.load* directly — no filemakerScripts      data.json           # Dev-only: mock data store — read/written by mocks.js, imported by nav-bar-content
-      nav-bar-content.js  # Dev-only (optional): DOM element shown in dev nav modal — interact only via window functions and filemakerScripts, never import viewer internals
+      client.js           # Dev-only: fires the FM script that production's OnLayoutEnter would. ONE line per viewer — calls e.g. filemakerScripts.navigateToList() / navigateToDetail(id from URL)
+      data.json           # Dev-only: writable mock data store — read fresh on every mocks.js handler call (fs.readFileSync, no in-memory cache)
+      nav-bar-content.js  # Dev-only (optional): DOM element in the dev nav modal — interact only via window globals or filemakerScripts; importing from src/shared/ is fine, viewer internals are not
 dev-server/
-  mocks.js                # Server-side FM script mock handlers — the only server-side customisation needed
+  mocks.js                # Server-side FM script mock handlers — one handler per FM script, owns goToLayout + the data push for that script
 ```
 
 ---
 
 ## The viewer contract
 
-Every viewer must follow three rules:
+Every viewer follows four rules:
 
 **1. `index.js` exports a DOM element as its default export.** wv-kit injects an inline script that does `document.getElementById('app').append(defaultExport)`, then calls `flushMounts()` to run any `onMount` callbacks.
 
 **2. `view.js` returns — never appends — the app element.**
 
-**3. `dev/client.js` calls window control functions directly with imported data** — import `data.json` with `type: 'json'` and call `window.loadData(JSON.stringify(data))` or `window.loadDetail(...)` directly. Do not call `filemakerScripts.*` from dev files — that round-trips through the mock and SSE unnecessarily. The dev file is simulating what FileMaker would push; call the receiver directly.
+**3. `index.js` does NOT request initial data.** In production FileMaker pushes data to the viewer (typically via an OnLayoutEnter trigger that runs a "show <viewer>" script). The viewer never asks. `index.js` is just: register control functions on `window`, build the app, export.
+
+**4. `dev/client.js` is the dev-only stand-in for FileMaker's OnLayoutEnter.** It fires the same FM script the production trigger would, using URL params for context. The mock handler owns both the navigation (`goToLayout`) and the data push (`performJavaScriptInWebViewer`), so click-through and reload go through one source of truth:
 
 ```js
+// src/list/dev/client.js
+import filemakerScripts from '../../shared/filemaker-scripts.js';
+filemakerScripts.navigateToList();
+
 // src/detail/dev/client.js
-import data from '../../list/dev/data.json' with { type: 'json' };
+import filemakerScripts from '../../shared/filemaker-scripts.js';
 const id = new URLSearchParams(window.location.search).get('id') ?? 'new';
-if (id === 'new') {
-  window.loadDetail(JSON.stringify({ id: 'new', name: '', ... }));
-} else {
-  const product = data.find(p => p.id === id);
-  if (product) window.loadDetail(JSON.stringify(product));
-}
+filemakerScripts.navigateToDetail(id);
 ```
+
+Why not import `data.json` directly and call `window.loadData(...)`? Vite caches JSON imports in dev — after `saveProduct` writes to disk, the cached import is stale. Going through the FM script flow guarantees a fresh `fs.readFileSync` on every call. (See "Dev mocks" below.)
 
 ---
 
@@ -151,9 +174,9 @@ export default buildApp();
 ```
 
 ```js
-// src/my-viewer/dev/client.js
-import data from './data.json' with { type: 'json' };
-window.loadData(JSON.stringify(data));
+// src/my-viewer/dev/client.js — dev-only OnLayoutEnter stand-in
+import filemakerScripts from '../../shared/filemaker-scripts.js';
+filemakerScripts.navigateToMyViewer();   // same script production would run on enter
 ```
 
 #### Kensington patterns
@@ -339,7 +362,9 @@ export default function buildApp() {
 }
 ```
 
-**Use `onMount` to run code after the container is in the DOM.** Because React renders asynchronously via `queueMicrotask`, `onMount` alone does not guarantee the React tree is ready — use `useEffect` inside the component for React-specific post-render work. `onMount` is still useful for measuring the container or initialising non-React plugins: `dev/client.js` calls `window.loadData` synchronously, before React has rendered the component and `useEffect` has registered the state setter. Without buffering, the data is silently dropped:
+**Use `onMount` to run code after the container is in the DOM.** Because React renders asynchronously via `queueMicrotask`, `onMount` alone does not guarantee the React tree is ready — use `useEffect` inside the component for React-specific post-render work. `onMount` is still useful for measuring the container or initialising non-React plugins.
+
+**React state setters are not available until after the first render.** The FM-driven flow (mock pushes `loadData` via SSE) can fire *before* React's `useEffect` registers the state setter — so you need a tiny module-level buffer that drains on first registration. Without it, the data is silently dropped:
 
 ```js
 // src/my-viewer/view.js
@@ -520,11 +545,12 @@ import controlFunctions from './control-functions.js';
 import App from './view.svelte';
 
 Object.assign(window, controlFunctions);
-filemakerScripts.requestProducts();
 
 const container = document.createElement('div');
 onMount(() => { mount(App, { target: container }); });
 export default container;
+// index.js does NOT request data — production FileMaker pushes it (via OnLayoutEnter);
+// in dev, src/<viewer>/dev/client.js plays that role.
 ```
 
 `mount` is imported as a bare specifier — Vite resolves it to the same `svelte` instance that `@sveltejs/vite-plugin-svelte` uses to compile components, so reactive ownership is shared. `'svelte'` is in the wv-kit ESLint allowlist (`KNOWN_BARE` in `lib/eslint.js`) for this reason.
@@ -647,8 +673,8 @@ export default buildApp();
 The correct separation:
 
 ```
-src/<viewer>/index.js      ← production code only. No URLs, no window.location.
-src/<viewer>/dev/client.js ← dev-only seed: reads the URL, calls filemakerScripts.*
+src/<viewer>/index.js      ← production: no URLs, no window.location, no FM script calls at startup
+src/<viewer>/dev/client.js ← dev-only OnLayoutEnter stand-in: reads URL, fires filemakerScripts.<scriptName>
 ```
 
 ```js
@@ -659,15 +685,12 @@ Object.assign(window, controlFunctions);
 export default buildApp();
 // FileMaker will call window.loadDetail(jsonStr) after navigating here.
 
-// src/detail/dev/client.js — dev only, calls window control functions directly
-import data from '../../list/dev/data.json' with { type: 'json' };
+// src/detail/dev/client.js — dev-only stand-in for OnLayoutEnter
+import filemakerScripts from '../../shared/filemaker-scripts.js';
 const id = new URLSearchParams(window.location.search).get('id') ?? 'new';
-if (id === 'new') {
-  window.loadDetail(JSON.stringify({ id: 'new', name: '', sku: '', category: '', price: 0, stock: 0, status: 'active', description: '', updatedAt: '' }));
-} else {
-  const product = data.find(p => p.id === id);
-  if (product) window.loadDetail(JSON.stringify(product));
-}
+filemakerScripts.navigateToDetail(id);
+// The mock for 'navigate to detail' does goToLayout(/detail?id=X) + push loadDetail.
+// goToLayout to the current URL is a no-op, so on reload there's no infinite loop.
 ```
 
 ---
@@ -678,11 +701,14 @@ All script name strings live in `src/shared/script-names.js`. All outbound calls
 
 ```js
 // src/shared/script-names.js
+// One script per FM action. Navigate scripts own BOTH "Go To Layout" and
+// the data push that follows — mirroring how a real FileMaker script does
+// both steps in sequence. No separate "request" scripts.
 export const scriptNames = {
-  requestProducts:  'request products',
-  requestProduct:   'request product',
+  navigateToList:   'navigate to list',
+  navigateToDetail: 'navigate to detail',
   saveProduct:      'save product',
-  navigateToDetail: 'go to detail',
+  deleteProduct:    'delete product',
 };
 ```
 
@@ -694,10 +720,10 @@ import { performFileMakerScript } from 'wv-kit';
 import { scriptNames } from './script-names.js';
 
 export default {
-  requestProducts()    { performFileMakerScript(scriptNames.requestProducts); },
-  requestProduct(id)   { performFileMakerScript(scriptNames.requestProduct, { id }); },
+  navigateToList()     { performFileMakerScript(scriptNames.navigateToList); },
+  navigateToDetail(id) { performFileMakerScript(scriptNames.navigateToDetail, { id }); },
   saveProduct(product) { performFileMakerScript(scriptNames.saveProduct, product); },
-  // ...
+  deleteProduct(id)    { performFileMakerScript(scriptNames.deleteProduct, { id }); },
 };
 ```
 
@@ -741,55 +767,118 @@ export default {
 
 ## Dev mocks (`dev-server/mocks.js`)
 
-Each key is a script name from `scriptNames`. The handler receives the raw JSON string and can call `performJavaScriptInWebViewer` to fire inbound callbacks.
+Each key is a script name from `scriptNames`. The handler receives the raw JSON string and can call `performJavaScriptInWebViewer` (FM → browser callback) or `goToLayout` (FM "Go To Layout" equivalent).
+
+### The two server → browser primitives
+
+| Call | Browser effect |
+|---|---|
+| `performJavaScriptInWebViewer(fn, ...args)` | `window[fn](...args)` — no special names; `'alert'`, `'loadData'`, `'onSaveResult'`, etc. all dispatch to the same-named window global |
+| `goToLayout(to)` | `window.location.href = to`, or `window.location.search = to` when `to` starts with `?`. No-op when `to` matches the current URL |
+
+Navigation is a separate primitive because in FileMaker it's a script step ("Go To Layout"), not JavaScript pushed to the viewer.
+
+### Single source of truth, fresh on every call
+
+- `dev-server/mocks.js` watches `dev-server/` only (not `src/`) so saves to `src/<viewer>/dev/data.json` don't restart the server.
+- Every handler reads from disk with `fs.readFileSync` on every call — there is **no module-level in-memory cache** of products/records. That mirrors FileMaker, where each script re-queries.
+- Every write uses `fs.writeFileSync`. After the write returns, the next read sees it.
+
+### Canonical CRUD pattern
+
+This is the shape mocks.js should take for any list/detail viewer. One handler per FM script step; navigate-style handlers own BOTH `goToLayout` and the data push:
 
 ```js
 import fs from 'node:fs';
-import { scriptNames } from '../src/shared/script-names.js';
-import { performJavaScriptInWebViewer } from 'wv-kit';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const DATA_PATH = new URL('../src/my-viewer/dev/data.json', import.meta.url).pathname;
+import { goToLayout, performJavaScriptInWebViewer } from 'wv-kit';
+import { scriptNames } from '../src/shared/script-names.js';
+
+const DATA_PATH = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../src/list/dev/data.json');
+const readAll   = ()     => JSON.parse(fs.readFileSync(DATA_PATH, 'utf-8'));
+const writeAll  = (data) => fs.writeFileSync(DATA_PATH, JSON.stringify(data, null, 2) + '\n');
 
 export default {
-  // Simple navigation mock
-  [scriptNames.goToDetail]: param => {
-    const { ID } = JSON.parse(param);
-    performJavaScriptInWebViewer('navigate', `/detail?id=${ID}`);
+  [scriptNames.navigateToList]: () => {
+    goToLayout('/list');
+    performJavaScriptInWebViewer('loadData', JSON.stringify(readAll()));
   },
 
-  // Async save mock — reads file, mutates, writes, then calls back
-  [scriptNames.saveRecord]: body => {
-    const { id, fields } = JSON.parse(body);
-    const data = JSON.parse(fs.readFileSync(DATA_PATH, 'utf-8'));
-    const record = data.find(r => r.id === id);
-    if (record) Object.assign(record, fields);
-    fs.writeFileSync(DATA_PATH, JSON.stringify(data, null, 2));
-    performJavaScriptInWebViewer('onSaveResult', JSON.stringify({ success: true }));
+  [scriptNames.navigateToDetail]: param => {
+    const { id } = JSON.parse(param);
+    goToLayout(`/detail?id=${id}`);
+    if (id === 'new') {
+      const blank = { id: 'new', name: '', /* ... */ };
+      performJavaScriptInWebViewer('loadDetail', JSON.stringify(blank));
+      return;
+    }
+    const record = readAll().find(r => r.id === id);
+    if (record) performJavaScriptInWebViewer('loadDetail', JSON.stringify(record));
+    else        performJavaScriptInWebViewer('alert', `Not found: ${id}`);
   },
 
-  // Simulated delay (FM scripts are async in production)
-  [scriptNames.loadRecord]: param => {
-    const { ID } = JSON.parse(param);
-    const data = JSON.parse(fs.readFileSync(DATA_PATH, 'utf-8'));
-    const record = data.find(r => r.id === ID);
-    setTimeout(() => {
-      performJavaScriptInWebViewer('loadData', JSON.stringify(record));
-    }, 50);
+  [scriptNames.saveProduct]: param => {
+    const incoming = JSON.parse(param);
+    const records  = readAll();
+    const idx      = records.findIndex(r => r.id === incoming.id);
+    let updated    = { ...incoming, updatedAt: new Date().toISOString().slice(0, 10) };
+    if (idx >= 0)  records[idx] = updated;
+    else           records.push((updated = { ...updated, id: `prod-${Date.now()}` }));
+    writeAll(records);
+    performJavaScriptInWebViewer('onSaveResult', JSON.stringify({ success: true, product: updated }));
   },
 
-  // Alert for unimplemented scripts
-  [scriptNames.newRelease]: () => {
-    performJavaScriptInWebViewer('alert', 'New Release (mock — not implemented)');
+  [scriptNames.deleteProduct]: param => {
+    const { id } = JSON.parse(param);
+    const records = readAll();
+    const idx = records.findIndex(r => r.id === id);
+    if (idx >= 0) { records.splice(idx, 1); writeAll(records); }
+    performJavaScriptInWebViewer('onDeleteResult', JSON.stringify({ success: true, id }));
+    // Do NOT also goToLayout('/list') here. The browser-side onDeleteResult
+    // handler calls filemakerScripts.navigateToList(), which triggers that
+    // mock — keeping the post-delete navigation decision in browser code.
   },
 };
 ```
 
-**Special `performJavaScriptInWebViewer` targets** (handled by wv-kit, not `window[fn]`):
-- `'navigate'` → `window.location.href = args[0]`
-- `'navigateSearch'` → `window.location.search = args[0]`
-- `'alert'` → `window.alert(args[0])`
+### The "Go To Layout + Perform JavaScript" chain — why this works
 
-All other names call `window[fn](...args)` — so `performJavaScriptInWebViewer('loadData', json)` calls `window.loadData(json)`.
+The two calls in `navigateToDetail` happen on the server while the browser is mid-navigation: the old page's SSE is closing, the new page hasn't connected yet. wv-kit handles this by opening a brief post-`goToLayout` queue window (2 s). Any `performJavaScriptInWebViewer` frames fired in the same handler are queued; the next SSE client to connect drains them. So the freshly-loaded `/detail` page receives `loadDetail` reliably.
+
+### Why dev/client.js calls the same script
+
+Because each navigate-style mock is the single source of truth for "go to this layout AND load its data", `dev/client.js` can just re-fire it on page load:
+
+```js
+// src/detail/dev/client.js
+import filemakerScripts from '../../shared/filemaker-scripts.js';
+const id = new URLSearchParams(window.location.search).get('id') ?? 'new';
+filemakerScripts.navigateToDetail(id);
+```
+
+`goToLayout` to the current URL is a no-op (matches FileMaker), so reload doesn't loop. Click-through, reload, and direct visit all flow through the same handler. In production FileMaker plays this role via an OnLayoutEnter trigger that runs the same `navigate to detail` script.
+
+### Mocking alerts and other window globals
+
+There are no special-cased names. `'alert'`, `'confirm'`, anything on `window`:
+```js
+performJavaScriptInWebViewer('alert', 'Coming soon');
+```
+That just calls `window.alert('Coming soon')` in the browser. Same for any inbound callback the viewer registers — `loadData`, `onSaveResult`, custom names, etc.
+
+### What about side effects in mock handlers?
+
+Run them inline. Mocks are plain Node — `fs`, `setTimeout`, `await fetch(...)` all work. A handler can be `async`:
+
+```js
+[scriptNames.searchRemote]: async param => {
+  const { q } = JSON.parse(param);
+  const res = await fetch(`https://example.com/api?q=${encodeURIComponent(q)}`);
+  performJavaScriptInWebViewer('onSearchResult', JSON.stringify(await res.json()));
+},
+```
 
 ---
 
