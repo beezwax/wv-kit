@@ -138,8 +138,9 @@ for (const exampleDir of exampleDirs) {
           const body = await res.text();
           assert.match(body, /<main id="app">/);
           assert.match(body, /\/dev\/shared-dev-index\.js/);
-          // The injected inline script imports the viewer's index module.
-          assert.match(body, new RegExp(`/src/${viewer}/index\\.js`));
+          // The injected inline script imports the viewer's index module by its
+          // actual extension (.js/.ts/.tsx/.jsx).
+          assert.match(body, new RegExp(`/src/${viewer}/index\\.(js|ts|tsx|jsx)`));
         });
 
         it('Vite transforms the viewer entry module', async () => {
