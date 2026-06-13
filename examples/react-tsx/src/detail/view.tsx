@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import filemakerScripts from '../shared/filemaker-scripts.js';
-import type { DeleteResult, Product, SaveResult } from '../shared/types.js';
+import { fmScripts } from '../../fm/fm-scripts.js';
+import type { DeleteResult, Product, SaveResult } from '../../fm/schema.js';
 import { FormFields } from './FormFields.js';
 
 type SetProduct   = (p: Product) => void;
@@ -49,12 +49,12 @@ function ProductDetail() {
   const handleSave = useCallback(() => {
     if (!product) return;
     setSaving(true);
-    filemakerScripts.saveProduct({ ...product, name, sku, category, price, stock, status, description });
+    fmScripts.saveProduct({ ...product, name, sku, category, price, stock, status, description });
   }, [product, name, sku, category, price, stock, status, description]);
 
   const handleDelete = useCallback(() => {
     if (product && confirm(`Delete "${product.name}"? This cannot be undone.`)) {
-      filemakerScripts.deleteProduct(product.id);
+      fmScripts.deleteProduct({ id: product.id });
     }
   }, [product]);
 
@@ -65,7 +65,7 @@ function ProductDetail() {
   return (
     <div className="container py-3">
       <div className="d-flex align-items-center gap-3 mb-4">
-        <button className="btn btn-outline-secondary" type="button" onClick={() => filemakerScripts.navigateToList()}>
+        <button className="btn btn-outline-secondary" type="button" onClick={() => fmScripts.navigateToList()}>
           ← List
         </button>
         <h1 className="fs-4 mb-0 flex-grow-1">{product?.id === 'new' ? 'New Product' : name}</h1>

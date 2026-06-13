@@ -127,11 +127,11 @@ describe('no-dev-outside-import', () => {
       // non-dev file — rule doesn't apply
       { code: "import x from '../shared/utils.js';", filename: 'src/list/view.js' },
       // same-dir import in dev
-      { code: "import x from './data.json';",         filename: 'src/list/dev/client.js' },
+      { code: "import x from './data.json';",         filename: 'src/list/dev/on-first-load.js' },
       // src/shared/ is allowed by default — it's the reusable surface
       {
         code: "import filemakerScripts from '../../shared/filemaker-scripts.js';",
-        filename: 'src/list/dev/client.js',
+        filename: 'src/list/dev/on-first-load.js',
       },
       {
         code: "import { scriptNames } from '../../shared/script-names.js';",
@@ -146,7 +146,7 @@ describe('no-dev-outside-import', () => {
       // same-directory dev import is fine
       { code: "import x from './helper.js';", filename: 'src/list/dev/nav-bar-content.js' },
       // dev-to-dev cross-viewer is exempt via '/dev/' check
-      { code: "import x from '../../detail/dev/helper.js';", filename: 'src/list/dev/client.js' },
+      { code: "import x from '../../detail/dev/helper.js';", filename: 'src/list/dev/on-first-load.js' },
     ],
     invalid: [
       {
@@ -156,7 +156,7 @@ describe('no-dev-outside-import', () => {
       },
       {
         code: "import { state } from '../../detail/state.js';",
-        filename: 'src/list/dev/client.js',
+        filename: 'src/list/dev/on-first-load.js',
         errors: [{ messageId: 'noDevOutsideImport' }],
       },
     ],

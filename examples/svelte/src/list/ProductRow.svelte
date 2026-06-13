@@ -1,5 +1,5 @@
 <script>
-  import filemakerScripts from '../shared/filemaker-scripts.js';
+  import { fmScripts } from '../../fm/fm-scripts.js';
   import { formatPrice, statusClass } from '../shared/product-utils.js';
 
   let { product } = $props();
@@ -7,7 +7,7 @@
 
 <tr
   style="cursor: pointer"
-  onclick={() => filemakerScripts.navigateToDetail(product.id)}
+  onclick={() => fmScripts.navigateToDetail({ id: product.id })}
 >
   <td class="fw-medium">{product.name}</td>
   <td><code class="text-muted">{product.sku}</code></td>

@@ -122,10 +122,10 @@ describe('normalizeDevDataEncoding', () => {
   });
 
   it('ignores non-JSON files in dev/', async () => {
-    const sibling = write(srcDir, 'list/dev/client.js', utf16leWithBom('console.log("x");'));
+    const sibling = write(srcDir, 'list/dev/on-first-load.js', utf16leWithBom('console.log("x");'));
     await normalizeDevDataEncoding(srcDir);
 
-    // client.js should be untouched — the helper only handles *.json.
+    // on-first-load.js should be untouched — the helper only handles *.json.
     const after = fs.readFileSync(sibling);
     assert.equal(after[0], 0xff);
     assert.equal(after[1], 0xfe);

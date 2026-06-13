@@ -3,7 +3,7 @@
 // Chromium, and runs the same two assertions:
 //
 //   1. The list viewer renders products from `dev/data.json` (proves the full
-//      "FileMaker → browser" callback path: dev/client.js → window.loadData
+//      "FileMaker → browser" callback path: dev/on-first-load.js → window.loadData
 //      → framework re-render).
 //   2. Clicking "+ New Product" navigates to /detail (proves the full
 //      "browser → FileMaker → browser" path: performFileMakerScript →
@@ -147,7 +147,7 @@ for (const exampleDir of exampleDirs) {
       ]);
 
       // DOM assertion: detail page renders "New Product" h1 and the name
-      // field is empty (proves dev/client.js's blank-product seed fired).
+      // field is empty (proves dev/on-first-load.js's blank-product seed fired).
       await page.locator('h1', { hasText: /^New Product$/ }).waitFor({ timeout: 10_000 });
       const nameValue = await page.locator('input[type="text"]').first().inputValue();
       assert.equal(nameValue, '', 'name input should be empty for a new product');

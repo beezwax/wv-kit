@@ -1,4 +1,4 @@
-import filemakerScripts from '../shared/filemaker-scripts.js';
+import { fmScripts } from '../../fm/fm-scripts.js';
 import { formatPrice } from '../shared/product-utils.js';
 import { buildFormFields } from './form-fields.js';
 
@@ -58,7 +58,7 @@ export default function buildApp() {
 
   queueMicrotask(() => {
     document.getElementById('back-btn').addEventListener('click', () => {
-      filemakerScripts.navigateToList();
+      fmScripts.navigateToList();
     });
 
     document.getElementById('f-price').addEventListener('input', evt => {
@@ -71,7 +71,7 @@ export default function buildApp() {
     document.getElementById('detail-form').addEventListener('submit', evt => {
       evt.preventDefault();
       if (!currentProduct) return;
-      filemakerScripts.saveProduct({
+      fmScripts.saveProduct({
         ...currentProduct,
         name:        document.getElementById('f-name').value,
         sku:         document.getElementById('f-sku').value,
@@ -85,7 +85,7 @@ export default function buildApp() {
 
     document.getElementById('delete-btn').addEventListener('click', () => {
       if (currentProduct && confirm(`Delete "${currentProduct.name}"? This cannot be undone.`)) {
-        filemakerScripts.deleteProduct(currentProduct.id);
+        fmScripts.deleteProduct({ id: currentProduct.id });
       }
     });
   });

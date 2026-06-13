@@ -27,7 +27,7 @@ When you change anything in `lib/`, you can validate against all six examples by
 | `bin/wv-kit.js` | CLI entry — dispatches `start` / `build` / `check` / `init` |
 | `lib/server.js` | Dev server: Express + Vite middleware, viewer auto-discovery, SSE relay, mock dispatch. Port via `PORT` env, default 3000. |
 | `lib/build.js` | Per-viewer single-file build: lint → inject `index.html` → `vite build` → rename to `dist/<viewer>.html` |
-| `lib/injected-index-page.js` | Builds the dev HTML shell — injects shared/viewer CSS, `dev/client.js`, `dev/nav-bar-content.js`, the dev nav |
+| `lib/injected-index-page.js` | Builds the dev HTML shell — injects shared/viewer CSS, `dev/on-first-load.js`, `dev/nav-bar-content.js`, the dev nav |
 | `lib/sse.js` | One-active-client SSE registry; `performJavaScriptInWebViewer` broadcasts here |
 | `lib/shared-dev-index.js` | Browser-side dev runtime — receives SSE, dispatches to `window[fn]`, stubs `window.FileMaker` |
 | `lib/browser/lifecycle.js` | Public browser API: `onMount`, `performFileMakerScript`, queue-until-ready |

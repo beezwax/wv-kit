@@ -1,5 +1,5 @@
 import { LitElement, html } from 'lit';
-import filemakerScripts from '../shared/filemaker-scripts.js';
+import { fmScripts } from '../../fm/fm-scripts.js';
 import { renderProductRow } from './product-row.js';
 
 let _element = null;
@@ -65,7 +65,7 @@ class ProductList extends LitElement {
           <button
             class="btn btn-primary ms-auto"
             type="button"
-            @click=${() => filemakerScripts.navigateToDetail('new')}
+            @click=${() => fmScripts.navigateToDetail({ id: 'new' })}
           >
             + New Product
           </button>

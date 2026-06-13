@@ -1,5 +1,5 @@
 <script>
-  import filemakerScripts from '../shared/filemaker-scripts.js';
+  import { fmScripts } from '../../fm/fm-scripts.js';
   import { formatPrice } from '../shared/product-utils.js';
   import { getProduct, getToast } from './state.svelte.js';
 
@@ -37,13 +37,13 @@
     evt.preventDefault();
     const p = getProduct();
     if (!p) return;
-    filemakerScripts.saveProduct({ ...p, name, sku, category, price, stock, status, description });
+    fmScripts.saveProduct({ ...p, name, sku, category, price, stock, status, description });
   }
 
   function handleDelete() {
     const p = getProduct();
     if (p && confirm(`Delete "${p.name}"? This cannot be undone.`)) {
-      filemakerScripts.deleteProduct(p.id);
+      fmScripts.deleteProduct({ id: p.id });
     }
   }
 </script>
@@ -53,7 +53,7 @@
     <button
       class="btn btn-outline-secondary"
       type="button"
-      onclick={() => filemakerScripts.navigateToList()}
+      onclick={() => fmScripts.navigateToList()}
     >
       ← List
     </button>

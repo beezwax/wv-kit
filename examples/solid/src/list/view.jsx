@@ -1,6 +1,6 @@
 import { createSignal, createMemo, For, Show } from 'solid-js';
 import { render } from 'solid-js/web';
-import filemakerScripts from '../shared/filemaker-scripts.js';
+import { fmScripts } from '../../fm/fm-scripts.js';
 import ProductRow from './ProductRow.jsx';
 
 const [products, setProducts] = createSignal([]);
@@ -52,7 +52,7 @@ function App() {
         <button
           class="btn btn-primary ms-auto"
           type="button"
-          onClick={() => filemakerScripts.navigateToDetail('new')}
+          onClick={() => fmScripts.navigateToDetail({ id: 'new' })}
         >+ New Product</button>
       </div>
       <div class="table-responsive">

@@ -1,6 +1,6 @@
 import { createSignal, Show } from 'solid-js';
 import { render } from 'solid-js/web';
-import filemakerScripts from '../shared/filemaker-scripts.js';
+import { fmScripts } from '../../fm/fm-scripts.js';
 import { formatPrice } from '../shared/product-utils.js';
 
 const [productId, setProductId] = createSignal(null);
@@ -44,7 +44,7 @@ export function showSaveResult(result) {
 function handleSubmit(e) {
   e.preventDefault();
   if (!productId()) return;
-  filemakerScripts.saveProduct({
+  fmScripts.saveProduct({
     id:          productId(),
     name:        fName(),
     sku:         fSku(),
@@ -53,12 +53,13 @@ function handleSubmit(e) {
     stock:       parseInt(fStock(), 10),
     status:      fStatus(),
     description: fDescription(),
+    updatedAt:   updatedAt(),
   });
 }
 
 function handleDelete() {
   if (productId() && confirm(`Delete "${fName()}"? This cannot be undone.`)) {
-    filemakerScripts.deleteProduct(productId());
+    fmScripts.deleteProduct({ id: productId() });
   }
 }
 
@@ -69,7 +70,7 @@ function App() {
         <button
           class="btn btn-outline-secondary"
           type="button"
-          onClick={() => filemakerScripts.navigateToList()}
+          onClick={() => fmScripts.navigateToList()}
         >← List</button>
         <h1 class="fs-4 mb-0 flex-grow-1">{productName()}</h1>
         <span class="text-muted small">{updatedAt()}</span>

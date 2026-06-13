@@ -1,6 +1,6 @@
 import data from '../../list/dev/data.json';
-
-const blank = { id: 'new', name: '', sku: '', category: '', price: 0, stock: 0, status: 'active', description: '', updatedAt: '' };
+import { jsFunctions } from '../js-functions.js';
+import { blankProduct } from '../../../fm/schema.js';
 
 const wrapper = document.createElement('div');
 wrapper.className = 'd-flex align-items-center gap-2';
@@ -24,10 +24,11 @@ data.forEach(p => {
 select.addEventListener('change', e => {
   const id = e.target.value;
   if (!id) return;
-  const product = id === 'new' ? blank : data.find(p => p.id === id);
-  if (product) window.loadDetail(JSON.stringify(product));
+  const product = id === 'new' ? blankProduct : data.find(p => p.id === id);
+  if (product) jsFunctions.loadDetail(JSON.stringify(product));
   e.target.value = '';
 });
 
 wrapper.append(label, select);
 export default wrapper;
+

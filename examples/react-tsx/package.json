@@ -1,10 +1,10 @@
 {
   "name": "wv-kit-example-react-tsx",
   "version": "1.0.0",
-  "description": "wv-kit example \u2014 React + TypeScript product catalog",
+  "description": "wv-kit example — React + TypeScript product catalog",
   "type": "module",
   "scripts": {
-    "start": "node --watch-path=dev-server node_modules/wv-kit/lib/server.js",
+    "start": "node --watch-path=fm node_modules/wv-kit/lib/server.js",
     "build": "wv-kit build",
     "preview": "wv-kit preview",
     "typecheck": "tsc --noEmit",
@@ -16,6 +16,7 @@
     "eslint": "^10.4.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "valibot": "^1.4.1",
     "vite": "8.0.16",
     "wv-kit": "file:../.."
   },

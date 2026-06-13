@@ -8,15 +8,16 @@ This file is for AI agents working on FileMaker web viewer projects. Read it bef
 
 | Request | Files to touch |
 |---|---|
-| **Add a new FM script call** (browser → FM) | Add a key to `src/shared/script-names.js`; add a wrapper method to `src/shared/filemaker-scripts.js`; add a handler in `dev-server/mocks.js` |
-| **Add a new FM callback** (FM → browser) | Add the method to the viewer's `control-functions.js` (it's auto-registered on `window` by `index.js`); call it from a mock via `performJavaScriptInWebViewer('<name>', json)` |
-| **Add a new viewer (layout)** | Create `src/<viewer>/index.js`, `view.js`, `control-functions.js`, plus `dev/client.js` that re-fires the viewer's "navigate to" script |
-| **Add a new column/field to the list** | Update the rendering in `src/list/view.js`; if it persists, the existing `saveProduct` mock already round-trips arbitrary fields |
-| **Make the detail page load on direct URL visit / reload** | Already handled: `src/<viewer>/dev/client.js` fires `filemakerScripts.navigateTo<Viewer>(id)`. The mock handler is the single source of truth for "load this record" |
-| **Initial data load on layout open** | In production, FileMaker's OnLayoutEnter runs the navigate-to script. In dev, `src/<viewer>/dev/client.js` plays the same role |
+| **Add a new FM script call** (browser → FM) | Add an entry to `fm/fm-scripts.{js,ts}`'s `defineContract({ fmScripts })` map (with `fmName` and optional `payload` schema from `fm/schema.{js,ts}`); add a handler in `fm/mocks.{js,ts}` |
+| **Add a new FM callback** (FM → browser) | Add a handler + schema to the viewer's `src/<viewer>/js-functions.{js,ts}` (`defineJsFunctions` registers `window.<name>` on import); call it from a mock via `performJavaScriptInWebViewer('<name>', JSON.stringify(value))` |
+| **Add a new viewer (layout)** | Create `src/<viewer>/index.{js,ts}` (side-effect `import './js-functions.{js,ts}'` + `buildApp`), `view.{js,jsx,tsx,svelte}`, `js-functions.{js,ts}`, plus `dev/on-first-load.js` that re-fires the viewer's "navigate to" script |
+| **Add a new column/field to the list** | Add the field to the inner shape in `fm/schema.{js,ts}` (`productShape`); update the rendering in `src/list/view.{js,jsx,tsx,svelte}`; the existing `saveProduct` mock already round-trips arbitrary fields |
+| **Make the detail page load on direct URL visit / reload** | Already handled: `src/<viewer>/dev/on-first-load.js` fires `fmScripts.navigateTo<Viewer>({ id })`. The mock handler is the single source of truth for "load this record" |
+| **Initial data load on layout open** | In production, FileMaker's OnLayoutEnter runs the navigate-to script. In dev, `src/<viewer>/dev/on-first-load.js` plays the same role — but only on fresh page loads, not after an in-tab `goToLayout` (the destination mock already pushed data) |
 | **Add a confirmation alert in a mock** | `performJavaScriptInWebViewer('alert', 'message')` — no special-casing, it just calls `window.alert` |
-| **Persist data across server restarts** | Mocks read/write `src/<viewer>/dev/data.json` directly with `fs.readFileSync`/`fs.writeFileSync` on every call. The dev server watches `dev-server/` only, so writes here don't trigger a restart |
+| **Persist data across server restarts** | Mocks read/write `src/<viewer>/dev/data.json` directly with `fs.readFileSync`/`fs.writeFileSync` on every call. The dev server watches `fm/` only, so writes here don't trigger a restart |
 | **Navigate from a mock handler** | `goToLayout('/list')` or `goToLayout(`/detail?id=${id}`)`. A query-only string (`?q=foo`) updates `window.location.search`. No-op when target matches current URL |
+| **Hook into validation failures in prod** | `window.addEventListener('wv-kit:schema-error', (e) => { /* e.detail.label, e.detail.issues, e.detail.value */ })` — fires before the dev throw and before the prod log+passthrough |
 
 The full conventions for each of these are in the rest of this document.
 
@@ -74,21 +75,21 @@ src/
 Everything else is optional and picked up automatically when present:
 
 ```
+fm/                       # FileMaker boundary — shared by viewers AND the mock server
+  contract.js             # defineContract({ fmScripts, jsFunctions }) — single source of truth
+  schema.js               # Standard Schema definitions for every payload that crosses the boundary
+  mocks.js                # Server-side FM script mock handlers — one handler per fmScript, owns goToLayout + the data push for that script
 src/
   shared/
     style.css             # Global styles — injected into every viewer page if present
-    filemaker-scripts.js  # All outbound FM script calls go through here
-    script-names.js       # Central registry of FileMaker script name strings
+    product-utils.js      # Viewer-only utilities (formatting, etc.) — never imported by fm/
   <viewer-name>/
     view.js               # buildApp() — creates and returns the app element
-    control-functions.js  # Inbound FM callbacks, exposed via Object.assign(window, …)
     style.css             # Viewer-specific styles
     dev/
-      client.js           # Dev-only: fires the FM script that production's OnLayoutEnter would. ONE line per viewer — calls e.g. filemakerScripts.navigateToList() / navigateToDetail(id from URL)
+      on-first-load.js    # Dev-only: fires the FM script that production's OnLayoutEnter would. Runs ONLY on fresh page loads (typed URL, reload), NOT after in-tab navigation — for that, the goToLayout-triggering mock handler is the data source. ONE line per viewer — calls e.g. fmScripts.navigateToList() / navigateToDetail({ id })
       data.json           # Dev-only: writable mock data store — read fresh on every mocks.js handler call (fs.readFileSync, no in-memory cache)
-      nav-bar-content.js  # Dev-only (optional): DOM element in the dev nav modal — interact only via window globals or filemakerScripts; importing from src/shared/ is fine, viewer internals are not
-dev-server/
-  mocks.js                # Server-side FM script mock handlers — one handler per FM script, owns goToLayout + the data push for that script
+      nav-bar-content.js  # Dev-only (optional): DOM element in the dev nav modal — interact only via window globals or fmScripts; importing from src/shared/ or fm/ is fine, viewer internals are not
 ```
 
 ---
@@ -103,14 +104,14 @@ Every viewer follows four rules:
 
 **3. `index.js` does NOT request initial data.** In production FileMaker pushes data to the viewer (typically via an OnLayoutEnter trigger that runs a "show <viewer>" script). The viewer never asks. `index.js` is just: register control functions on `window`, build the app, export.
 
-**4. `dev/client.js` is the dev-only stand-in for FileMaker's OnLayoutEnter.** It fires the same FM script the production trigger would, using URL params for context. The mock handler owns both the navigation (`goToLayout`) and the data push (`performJavaScriptInWebViewer`), so click-through and reload go through one source of truth:
+**4. `dev/on-first-load.js` is the dev-only stand-in for FileMaker's OnLayoutEnter.** It fires the same FM script the production trigger would, using URL params for context. The mock handler owns both the navigation (`goToLayout`) and the data push (`performJavaScriptInWebViewer`), so click-through and reload go through one source of truth:
 
 ```js
-// src/list/dev/client.js
+// src/list/dev/on-first-load.js
 import filemakerScripts from '../../shared/filemaker-scripts.js';
 filemakerScripts.navigateToList();
 
-// src/detail/dev/client.js
+// src/detail/dev/on-first-load.js
 import filemakerScripts from '../../shared/filemaker-scripts.js';
 const id = new URLSearchParams(window.location.search).get('id') ?? 'new';
 filemakerScripts.navigateToDetail(id);
@@ -174,7 +175,7 @@ export default buildApp();
 ```
 
 ```js
-// src/my-viewer/dev/client.js — dev-only OnLayoutEnter stand-in
+// src/my-viewer/dev/on-first-load.js — dev-only OnLayoutEnter stand-in
 import filemakerScripts from '../../shared/filemaker-scripts.js';
 filemakerScripts.navigateToMyViewer();   // same script production would run on enter
 ```
@@ -564,7 +565,7 @@ const container = document.createElement('div');
 onMount(() => { mount(App, { target: container }); });
 export default container;
 // index.js does NOT request data — production FileMaker pushes it (via OnLayoutEnter);
-// in dev, src/<viewer>/dev/client.js plays that role.
+// in dev, src/<viewer>/dev/on-first-load.js plays that role.
 ```
 
 `mount` is imported as a bare specifier — Vite resolves it to the same `svelte` instance that `@sveltejs/vite-plugin-svelte` uses to compile components, so reactive ownership is shared. `'svelte'` is in the wv-kit ESLint allowlist (`KNOWN_BARE` in `lib/eslint.js`) for this reason.
@@ -680,7 +681,7 @@ export default buildApp();
 
 ## Production constraints
 
-**Never read `window.location` outside of `dev/`.** In production, each viewer is a self-contained HTML file pasted into FileMaker. There are no URL params — FileMaker owns navigation entirely and pushes data to the viewer via callbacks (`window.loadDetail(jsonStr)` etc.). Any code that reads `window.location.search` or `window.location.href` belongs exclusively in `dev/client.js`.
+**Never read `window.location` outside of `dev/`.** In production, each viewer is a self-contained HTML file pasted into FileMaker. There are no URL params — FileMaker owns navigation entirely and pushes data to the viewer via callbacks (`window.loadDetail(jsonStr)` etc.). Any code that reads `window.location.search` or `window.location.href` belongs exclusively in `dev/on-first-load.js`.
 
 **Never use `<a href="...">` for navigation** — FileMaker web viewers do not handle anchor-based navigation. All navigation must go through `filemakerScripts` (which calls `window.FileMaker.PerformScript`). Use `<button type="button">` with a click listener instead.
 
@@ -688,7 +689,7 @@ The correct separation:
 
 ```
 src/<viewer>/index.js      ← production: no URLs, no window.location, no FM script calls at startup
-src/<viewer>/dev/client.js ← dev-only OnLayoutEnter stand-in: reads URL, fires filemakerScripts.<scriptName>
+src/<viewer>/dev/on-first-load.js ← dev-only OnLayoutEnter stand-in: reads URL, fires filemakerScripts.<scriptName>
 ```
 
 ```js
@@ -699,7 +700,7 @@ Object.assign(window, controlFunctions);
 export default buildApp();
 // FileMaker will call window.loadDetail(jsonStr) after navigating here.
 
-// src/detail/dev/client.js — dev-only stand-in for OnLayoutEnter
+// src/detail/dev/on-first-load.js — dev-only stand-in for OnLayoutEnter
 import filemakerScripts from '../../shared/filemaker-scripts.js';
 const id = new URLSearchParams(window.location.search).get('id') ?? 'new';
 filemakerScripts.navigateToDetail(id);
@@ -861,12 +862,12 @@ export default {
 
 The two calls in `navigateToDetail` happen on the server while the browser is mid-navigation: the old page's SSE is closing, the new page hasn't connected yet. wv-kit handles this by opening a brief post-`goToLayout` queue window (2 s). Any `performJavaScriptInWebViewer` frames fired in the same handler are queued; the next SSE client to connect drains them. So the freshly-loaded `/detail` page receives `loadDetail` reliably.
 
-### Why dev/client.js calls the same script
+### Why dev/on-first-load.js calls the same script
 
-Because each navigate-style mock is the single source of truth for "go to this layout AND load its data", `dev/client.js` can just re-fire it on page load:
+Because each navigate-style mock is the single source of truth for "go to this layout AND load its data", `dev/on-first-load.js` can just re-fire it on page load:
 
 ```js
-// src/detail/dev/client.js
+// src/detail/dev/on-first-load.js
 import filemakerScripts from '../../shared/filemaker-scripts.js';
 const id = new URLSearchParams(window.location.search).get('id') ?? 'new';
 filemakerScripts.navigateToDetail(id);
@@ -1062,6 +1063,90 @@ export default function SkuList({ items, onSelect }: Props) {
 import { skus } from './data.js';      // imports data.ts
 import type { Sku } from './types.js'; // imports types.ts
 ```
+
+### Typing JS projects with JSDoc (no `.ts` files)
+
+Plain-JS projects can still get hover types, autocomplete, and red squiggles on wrong calls — driven by JSDoc annotations + a TypeScript config. This matters most around the FM boundary, where the contract's `fmScripts.X` and `jsFunctions.X` calls have payload schemas that should flow as types.
+
+**Setup (one-time):**
+
+1. **Use `tsconfig.json`, not `jsconfig.json`.** JetBrains IDEs (WebStorm/RubyMine/IntelliJ) route JS files through the TypeScript Language Service only when a `tsconfig.json` is present. They have spotty support for `jsconfig.json` — usually just module resolution, not type inference. VS Code accepts either, so `tsconfig.json` is the portable choice. A minimal config for a JS-only project:
+
+   ```json
+   {
+     "compilerOptions": {
+       "module":            "esnext",
+       "moduleResolution":  "bundler",
+       "target":            "es2022",
+       "lib":               ["es2022", "dom", "dom.iterable"],
+       "allowJs":           true,
+       "checkJs":           false,
+       "strict":            true,
+       "noEmit":            true,
+       "skipLibCheck":      true,
+       "resolveJsonModule": true,
+       "isolatedModules":   true
+     },
+     "include": ["src/**/*", "dev-server/**/*"],
+     "exclude": ["node_modules", "dist"]
+   }
+   ```
+
+   `checkJs: false` keeps IDE features (hover, autocomplete) live without erroring on every pre-existing untyped DOM handler. Opt specific files into strict checking with `// @ts-check` at the top.
+
+2. **Tell ESLint to skip `.d.ts`** if you write any. ESLint can't parse TypeScript syntax without `typescript-eslint`. For pure-JS projects, add an ignore in `eslint.config.js`:
+
+   ```js
+   export default [
+     { ignores: ['**/*.d.ts'] },
+     ...wvKitConfig,
+     // ...
+   ];
+   ```
+
+**Patterns that work well in JetBrains' JS engine:**
+
+- **`@typedef`s living in the same file as the values they describe.** Inferring `v.InferOutput<typeof schema>` into a named type:
+
+  ```js
+  /** @typedef {v.InferOutput<typeof productSchema>} Product */
+  ```
+
+  This works cross-file: other files can `import('./schema.js').Product` inside an `@type`.
+
+- **`@satisfies` for matching a literal against a type without widening.** Useful for "blank" records that should keep their literal types (e.g. `status: 'active'` stays narrowed to `'active'`, not widened to `string`):
+
+  ```js
+  /** @satisfies {Product} */
+  export const blankProduct = { /* ... */ };
+  ```
+
+- **Inline `@type` with TypeScript-style object literals** for namespaced API surfaces (the contract's `fmScripts`, `jsFunctions`, `mount`). JetBrains parses these inline annotations reliably, where it can struggle with conditional/mapped types that flow through library generics:
+
+  ```js
+  /**
+   * @type {{
+   *   navigateToList(): void,
+   *   navigateToDetail(payload: import('./schema.js').IdParam): void,
+   *   saveProduct(payload: import('./schema.js').Product): void,
+   * }}
+   */
+  export const fmScripts = contract.fmScripts;
+  ```
+
+  This is what `fm/contract.js` should look like for IDE-portable typing of the contract's broken-out namespaces — even when wv-kit's d.ts would *technically* infer the same types via generics, JetBrains' JS engine sometimes doesn't navigate those conditionals.
+
+**Patterns that don't work reliably in JetBrains:**
+
+- `@type` on a destructured `export const { x } = obj` — the annotation applies to the whole expression, not the binding. Use separate `export const x = obj.x;` lines instead.
+- Sibling `.d.ts` shadowing a `.js` — JetBrains' resolution is inconsistent compared to VS Code/`tsc`. Stick with inline JSDoc in the `.js`.
+- Cross-file `@typedef` chains where each link contributes a piece — JetBrains follows one hop reliably; deeper chains sometimes drop on the floor. Inline the type or duplicate the `@typedef` at the use site.
+
+**If types stop showing after a change:**
+
+- **JetBrains:** File → Invalidate Caches and Restart. The TS service caches type info aggressively and won't always re-evaluate when a `.d.ts`/`tsconfig.json`/`@type` block lands.
+- **JetBrains:** Settings → Languages & Frameworks → TypeScript — confirm "TypeScript Language Service" is enabled and "Recompile on changes" is on.
+- **VS Code:** Cmd+Shift+P → "TypeScript: Restart TS Server."
 
 ---
 

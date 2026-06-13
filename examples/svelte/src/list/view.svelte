@@ -1,5 +1,5 @@
 <script>
-  import filemakerScripts from '../shared/filemaker-scripts.js';
+  import { fmScripts } from '../../fm/fm-scripts.js';
   import ProductRow from './ProductRow.svelte';
   import {
     getProducts, getSearchQuery, getCategoryFilter,
@@ -42,7 +42,7 @@
     <button
       class="btn btn-primary ms-auto"
       type="button"
-      onclick={() => filemakerScripts.navigateToDetail('new')}
+      onclick={() => fmScripts.navigateToDetail({ id: 'new' })}
     >
       + New Product
     </button>

@@ -61,21 +61,21 @@ describe('injectedIndexPage', () => {
   });
 
   describe('optional dev files', () => {
-    it('includes dev/client.js when it exists', () => {
+    it('includes dev/on-first-load.js when it exists', () => {
       const dir = setupProject({
         'src/index.html': BASE_HTML,
-        'src/list/dev/client.js': 'window.loadData("[]");',
+        'src/list/dev/on-first-load.js': 'window.loadData("[]");',
       });
       const html = injectedIndexPage('list', ['list'], dir);
       cleanup(dir);
-      assert.ok(html.includes('/src/list/dev/client.js'));
+      assert.ok(html.includes('/src/list/dev/on-first-load.js'));
     });
 
-    it('omits dev/client.js when it does not exist', () => {
+    it('omits dev/on-first-load.js when it does not exist', () => {
       const dir = setupProject({ 'src/index.html': BASE_HTML });
       const html = injectedIndexPage('list', ['list'], dir);
       cleanup(dir);
-      assert.ok(!html.includes('/src/list/dev/client.js'));
+      assert.ok(!html.includes('/src/list/dev/on-first-load.js'));
     });
 
     it('includes nav-bar-content.js when it exists', () => {

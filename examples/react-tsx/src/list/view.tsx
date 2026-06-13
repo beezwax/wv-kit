@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import filemakerScripts from '../shared/filemaker-scripts.js';
-import type { Product } from '../shared/types.js';
+import { fmScripts } from '../../fm/fm-scripts.js';
+import type { Product } from '../../fm/schema.js';
 import { ProductRow } from './ProductRow.js';
 
 type SetProducts = (products: Product[]) => void;
@@ -51,7 +51,7 @@ function ProductList() {
         <button
           className="btn btn-primary ms-auto"
           type="button"
-          onClick={() => filemakerScripts.navigateToDetail('new')}
+          onClick={() => fmScripts.navigateToDetail({ id: 'new' })}
         >
           + New Product
         </button>

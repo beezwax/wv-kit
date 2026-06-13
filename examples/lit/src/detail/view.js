@@ -1,5 +1,5 @@
 import { LitElement, html, nothing } from 'lit';
-import filemakerScripts from '../shared/filemaker-scripts.js';
+import { fmScripts } from '../../fm/fm-scripts.js';
 import { formatPrice } from '../shared/product-utils.js';
 import { renderSaveToast } from './save-toast.js';
 
@@ -49,7 +49,7 @@ class ProductDetail extends LitElement {
     e.preventDefault();
     if (!this.product) return;
     const root = this;
-    filemakerScripts.saveProduct({
+    fmScripts.saveProduct({
       ...this.product,
       name:        root.querySelector('#f-name').value,
       sku:         root.querySelector('#f-sku').value,
@@ -63,7 +63,7 @@ class ProductDetail extends LitElement {
 
   _handleDelete() {
     if (this.product && confirm(`Delete "${this.product.name}"? This cannot be undone.`)) {
-      filemakerScripts.deleteProduct(this.product.id);
+      fmScripts.deleteProduct({ id: this.product.id });
     }
   }
 
@@ -90,7 +90,7 @@ class ProductDetail extends LitElement {
           <button
             class="btn btn-outline-secondary"
             type="button"
-            @click=${() => filemakerScripts.navigateToList()}
+            @click=${() => fmScripts.navigateToList()}
           >
             ← List
           </button>

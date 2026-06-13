@@ -1,5 +1,6 @@
-import controlFunctions from './control-functions.js';
+// Side-effect import — registers FileMaker → browser handlers onto window.*
+// (one per entry in ./js-functions.js).
+import './js-functions.js';
 import buildApp from './view.js';
 
-Object.assign(window, controlFunctions);
 export default buildApp();

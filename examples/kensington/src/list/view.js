@@ -1,7 +1,8 @@
 import { computed, signal, t } from 'kensington';
-import filemakerScripts from '../shared/filemaker-scripts.js';
+import { fmScripts } from '../../fm/fm-scripts.js';
 import { productRow } from './product-row.js';
 
+/** @type {import('kensington').Signal<import('../../fm/schema.js').ProductList>} */
 export const products = signal([]);
 const query    = signal('');
 const category = signal('');
@@ -46,7 +47,7 @@ export default function buildApp() {
       t.button({
         class: 'btn btn-primary ms-auto',
         type: 'button',
-        onclick() { filemakerScripts.navigateToDetail('new'); },
+        onclick() { fmScripts.navigateToDetail({ id: 'new' }); },
       }, '+ New Product'),
     ]),
     t.div({ class: 'table-responsive' }, t.table({ class: 'table table-hover align-middle mb-0' }, [

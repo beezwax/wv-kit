@@ -1,5 +1,5 @@
 import { formatPrice } from '../shared/product-utils.js';
-import type { Product } from '../shared/types.js';
+import type { Product } from '../../fm/schema.js';
 
 interface FormFieldsProps {
   name: string;

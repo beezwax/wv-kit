@@ -1,4 +1,4 @@
-import filemakerScripts from '../shared/filemaker-scripts.js';
+import { fmScripts } from '../../fm/fm-scripts.js';
 import { createProductRow } from './product-row.js';
 
 let allProducts = [];
@@ -42,7 +42,7 @@ function renderRows(products) {
   }
 
   products.forEach(p => {
-    tbody.appendChild(createProductRow(p, () => filemakerScripts.navigateToDetail(p.id)));
+    tbody.appendChild(createProductRow(p, () => fmScripts.navigateToDetail({ id: p.id })));
   });
 }
 
@@ -82,7 +82,7 @@ export default function buildApp() {
     document.getElementById('search-input').addEventListener('input', applyFilter);
     document.getElementById('category-filter').addEventListener('change', applyFilter);
     document.getElementById('new-btn').addEventListener('click', () => {
-      filemakerScripts.navigateToDetail('new');
+      fmScripts.navigateToDetail({ id: 'new' });
     });
   });
 

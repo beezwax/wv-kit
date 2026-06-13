@@ -1,5 +1,5 @@
 import { computed, signal, t } from 'kensington';
-import filemakerScripts from '../shared/filemaker-scripts.js';
+import { fmScripts } from '../../fm/fm-scripts.js';
 import { formatPrice } from '../shared/product-utils.js';
 import { saveToast } from './save-toast.js';
 
@@ -16,6 +16,7 @@ const stock       = signal(0);
 const status      = signal('active');
 const description = signal('');
 
+/** @param {import('../../fm/schema.js').Product} p */
 export function loadProduct(p) {
   product.set(p);
   name.set(p.name);
@@ -27,6 +28,7 @@ export function loadProduct(p) {
   description.set(p.description);
 }
 
+/** @param {import('../../fm/schema.js').SaveResult} result */
 export function showSaveResult(result) {
   saving.set(false);
   toast.set({
@@ -59,7 +61,7 @@ export default function buildApp() {
       t.button({
         class: 'btn btn-outline-secondary',
         type: 'button',
-        onclick() { filemakerScripts.navigateToList(); },
+        onclick() { fmScripts.navigateToList(); },
       }, '← List'),
       t.h1({ class: 'fs-4 mb-0 flex-grow-1' }, title),
       t.span({ class: 'text-muted small' }, updatedLabel),
@@ -161,7 +163,7 @@ export default function buildApp() {
           onclick() {
             if (!product.get()) return;
             saving.set(true);
-            filemakerScripts.saveProduct({
+            fmScripts.saveProduct({
               ...product.get(),
               name: name.get(),
               sku: sku.get(),
@@ -181,7 +183,7 @@ export default function buildApp() {
           onclick() {
             const p = product.get();
             if (p && confirm(`Delete "${p.name}"? This cannot be undone.`)) {
-              filemakerScripts.deleteProduct(p.id);
+              fmScripts.deleteProduct({ id: p.id });
             }
           },
         }, 'Delete'),
