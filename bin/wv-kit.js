@@ -12,9 +12,12 @@ if (command === 'start') {
 } else if (command === 'init') {
   const { runInit } = await import('../lib/init.js');
   await runInit();
+} else if (command === 'migrate') {
+  const { runMigrate } = await import('../lib/migrate.js');
+  runMigrate();
 } else if (command === 'preview') {
   await import('../lib/preview.js');
 } else {
-  console.error(`Unknown command: ${command}\nUsage: wv-kit [start | build [viewer...] | check | preview | init]`);
+  console.error(`Unknown command: ${command}\nUsage: wv-kit [start | build [viewer...] | check | preview | init | migrate]`);
   process.exit(1);
 }
