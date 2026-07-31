@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "currency.js": "^2.0.4",
-    "eslint": "^9.0.0",
+    "eslint": "^10.8.0",
     "lit": "^3.2.1",
     "valibot": "^1.4.1",
     "vite": "8.0.16",
